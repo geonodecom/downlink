@@ -9,6 +9,8 @@ import 'package:uuid/uuid.dart';
 import '../aria2/aria2_models.dart';
 import '../facebook/facebook_models.dart';
 import '../facebook/facebook_session.dart';
+import '../instagram/instagram_models.dart';
+import '../instagram/instagram_session.dart';
 import '../ytdlp/ytdlp_executable.dart';
 import '../ytdlp/ytdlp_models.dart';
 import '../ytdlp/ytdlp_progress.dart';
@@ -47,10 +49,15 @@ class YtdlpDownloadEngine implements DownloadEngine {
     this.facebookCookieArgs = const FacebookCookieArgs(),
     Future<FacebookCookieArgs> Function()? facebookCookieArgsProvider,
     FacebookSession? facebookSession,
+    this.instagramCookieArgs = const InstagramCookieArgs(),
+    Future<InstagramCookieArgs> Function()? instagramCookieArgsProvider,
+    InstagramSession? instagramSession,
   }) : _resolver = resolver ?? YtdlpExecutableResolver(),
        _publishFile = publishFile ?? _defaultPublishFile,
        _facebookCookieArgsProvider = facebookCookieArgsProvider,
-       _facebookSession = facebookSession ?? FacebookSession();
+       _facebookSession = facebookSession ?? FacebookSession(),
+       _instagramCookieArgsProvider = instagramCookieArgsProvider,
+       _instagramSession = instagramSession ?? InstagramSession();
 
   final YtdlpExecutableResolver _resolver;
   final Future<String?> Function(String sourcePath, String displayName)
@@ -58,6 +65,9 @@ class YtdlpDownloadEngine implements DownloadEngine {
   final FacebookCookieArgs facebookCookieArgs;
   final Future<FacebookCookieArgs> Function()? _facebookCookieArgsProvider;
   final FacebookSession _facebookSession;
+  final InstagramCookieArgs instagramCookieArgs;
+  final Future<InstagramCookieArgs> Function()? _instagramCookieArgsProvider;
+  final InstagramSession _instagramSession;
   final Map<String, _YtdlpJob> _jobs = {};
   var _started = false;
   String _downloadDirectory = '';
@@ -256,10 +266,14 @@ class YtdlpDownloadEngine implements DownloadEngine {
       job.status = 'active';
       job.errorMessage = null;
 
-      final cookieArgsProvider = _facebookCookieArgsProvider;
-      final cookieSettings = cookieArgsProvider != null
-          ? await cookieArgsProvider()
+      final facebookArgsProvider = _facebookCookieArgsProvider;
+      final facebookSettings = facebookArgsProvider != null
+          ? await facebookArgsProvider()
           : facebookCookieArgs;
+      final instagramArgsProvider = _instagramCookieArgsProvider;
+      final instagramSettings = instagramArgsProvider != null
+          ? await instagramArgsProvider()
+          : instagramCookieArgs;
       final args = [
         '--no-playlist',
         '--continue',
@@ -273,10 +287,12 @@ class YtdlpDownloadEngine implements DownloadEngine {
         job.options.formatId,
         '-o',
         job.outputPath,
-        ...await resolveYtdlpFacebookCookieArgs(
-          settings: cookieSettings,
-          session: _facebookSession,
+        ...await resolveYtdlpSiteCookieArgs(
           url: job.url,
+          facebook: facebookSettings,
+          facebookSession: _facebookSession,
+          instagram: instagramSettings,
+          instagramSession: _instagramSession,
         ),
         job.url,
       ];
@@ -421,6 +437,14 @@ class YtdlpDownloadEngine implements DownloadEngine {
         formatId: facebook.formatId,
         title: facebook.title,
         ext: facebook.ext,
+      );
+    }
+    if (kind == InstagramDownloadOptions.kind) {
+      final instagram = InstagramDownloadOptions.fromJson(optionsJson);
+      return YoutubeDownloadOptions(
+        formatId: instagram.formatId,
+        title: instagram.title,
+        ext: instagram.ext,
       );
     }
     return null;

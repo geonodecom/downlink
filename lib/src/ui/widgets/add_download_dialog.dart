@@ -10,6 +10,9 @@ import '../../extension/download_capture.dart';
 import '../../facebook/facebook_metadata_client.dart';
 import '../../facebook/facebook_models.dart';
 import '../../facebook/facebook_session.dart';
+import '../../instagram/instagram_metadata_client.dart';
+import '../../instagram/instagram_models.dart';
+import '../../instagram/instagram_session.dart';
 import '../../providers.dart';
 import '../../services/download_service.dart';
 import '../../services/url_classifier.dart';
@@ -99,7 +102,10 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
 
   bool get _isFacebookFlow => _urlKind == DownloadUrlKind.facebook;
 
-  bool get _isExtractorFlow => _isYoutubeFlow || _isFacebookFlow;
+  bool get _isInstagramFlow => _urlKind == DownloadUrlKind.instagram;
+
+  bool get _isExtractorFlow =>
+      _isYoutubeFlow || _isFacebookFlow || _isInstagramFlow;
 
   @override
   Widget build(BuildContext context) {
@@ -122,7 +128,7 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
                 decoration: const InputDecoration(
                   labelText: 'URL',
                   hintText:
-                      'https://example.com/file.iso, YouTube, or Facebook link',
+                      'https://example.com/file.iso, YouTube, Facebook, or Instagram',
                 ),
               ),
               if (widget.capture != null) ...[
@@ -188,6 +194,18 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
                             : 'Public videos work without cookies. '
                                 'Private/friends-only need cookies.txt or '
                                 'browser import in Settings → Facebook.',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ],
+                    if (_isInstagramFlow) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        Platform.isAndroid
+                            ? 'Public posts/reels usually work without login. '
+                                'Private need Instagram login in Settings.'
+                            : 'Public posts/reels work without cookies when yt-dlp allows it. '
+                                'Private need cookies.txt or browser import '
+                                'in Settings → Instagram.',
                         style: const TextStyle(fontSize: 12),
                       ),
                     ],
@@ -268,6 +286,7 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
                     DownloadUrlKind.youtube => 'Choose format',
                     DownloadUrlKind.youtubePlaylist => 'Queue playlist',
                     DownloadUrlKind.facebook => 'Choose format',
+                    DownloadUrlKind.instagram => 'Choose format',
                     DownloadUrlKind.direct => 'Add',
                   },
                 ),
@@ -287,7 +306,7 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
       setState(
         () => _error =
-            'Geonode supports HTTP, HTTPS, YouTube, and Facebook URLs.',
+            'Geonode supports HTTP, HTTPS, YouTube, Facebook, and Instagram URLs.',
       );
       return;
     }
@@ -305,6 +324,10 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
       await _submitFacebook(UrlClassifier.normalizeFacebookUrl(url));
       return;
     }
+    if (kind == DownloadUrlKind.instagram) {
+      await _submitInstagram(UrlClassifier.normalizeInstagramUrl(url));
+      return;
+    }
 
     await _submitDirect(url);
   }
@@ -316,6 +339,10 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
     if (_isFacebookFlow) {
       return 'Facebook videos save to Downloads. '
           'Private/friends-only need Facebook login in Settings.';
+    }
+    if (_isInstagramFlow) {
+      return 'Instagram posts/reels save to Downloads. '
+          'Private videos need Instagram login in Settings.';
     }
     return 'Files are saved to the system Downloads folder.';
   }
@@ -330,6 +357,11 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
         fromBrowser: settings.facebookCookiesFromBrowser,
       ),
       facebookSession: ref.read(facebookSessionProvider),
+      instagramCookieArgs: InstagramCookieArgs(
+        cookiesPath: settings.instagramCookiesPath,
+        fromBrowser: settings.instagramCookiesFromBrowser,
+      ),
+      instagramSession: ref.read(instagramSessionProvider),
     );
   }
 
@@ -722,6 +754,178 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
     return message;
   }
 
+  Future<void> _submitInstagram(String url) async {
+    setState(() {
+      _error = null;
+      _submitting = true;
+    });
+
+    final settings = await ref.read(downloadRepositoryProvider).getSettings();
+    late final YtdlpVideoInfo info;
+    late final Map<String, String> progressiveUrls;
+
+    if (Platform.isAndroid) {
+      final cookieHeader =
+          await ref.read(instagramSessionProvider).cookieHeader();
+      final client = InstagramMetadataClient(cookieHeader: cookieHeader);
+      try {
+        final result = await client.fetchInfo(url);
+        info = result.info;
+        progressiveUrls = result.progressiveUrls;
+      } on YtdlpException catch (error) {
+        if (mounted) {
+          setState(() {
+            _error = error.message;
+            _submitting = false;
+          });
+        }
+        return;
+      } catch (error) {
+        if (mounted) {
+          setState(() {
+            _error = error.toString();
+            _submitting = false;
+          });
+        }
+        return;
+      } finally {
+        client.close();
+      }
+    } else {
+      final client = await _youtubeClient();
+      if (!await _ensureYoutubeTools(client)) return;
+      progressiveUrls = const {};
+      try {
+        info = await client.fetchInfo(url);
+      } on YtdlpException catch (error) {
+        if (mounted) {
+          setState(() {
+            _error = _friendlyInstagramDesktopError(error.message);
+            _submitting = false;
+          });
+        }
+        return;
+      } on FormatException catch (error) {
+        if (mounted) {
+          setState(() {
+            _error =
+                'Could not read yt-dlp output for this Instagram video '
+                '(encoding error). Try again, or update yt-dlp. ($error)';
+            _submitting = false;
+          });
+        }
+        return;
+      } catch (error) {
+        if (mounted) {
+          setState(() {
+            _error = error.toString();
+            _submitting = false;
+          });
+        }
+        return;
+      }
+    }
+
+    if (!mounted) return;
+    setState(() => _submitting = false);
+
+    final preset = presetFromStorage(settings.youtubeFormatPreset);
+    final selection = await showYoutubeFormatDialog(
+      context,
+      info: info,
+      initialFormatId: info.defaultFormatId(preset),
+      dialogTitle: 'Choose Instagram format',
+    );
+    if (selection == null || !mounted) return;
+
+    setState(() {
+      _error = null;
+      _submitting = true;
+    });
+
+    try {
+      final directory = await resolveYtdlpDownloadDirectory(
+        Platform.isAndroid ? 'Downloads' : _directory.text.trim(),
+      );
+      final directUrl = progressiveUrls[selection.formatId] ?? '';
+      if (Platform.isAndroid && directUrl.isEmpty) {
+        throw StateError('Selected Instagram format has no progressive URL.');
+      }
+      final shortcode =
+          UrlClassifier.extractInstagramShortcode(url) ?? info.id;
+      final options = InstagramDownloadOptions(
+        formatId: selection.formatId,
+        title: selection.title,
+        ext: selection.ext,
+        directUrl: directUrl,
+      );
+      final fileName = _instagramFileName(
+        selection.fileName,
+        shortcode: shortcode,
+        ext: selection.ext,
+      );
+      await ref.read(downloadServiceProvider).addDownload(
+            NewDownload(
+              url: url,
+              directory: directory,
+              fileName: fileName,
+              split: Platform.isAndroid ? _split : 1,
+              startImmediately: _startImmediately,
+              metadata: DownloadMetadata(
+                fileName: fileName,
+                totalLength: 0,
+              ),
+              headers: widget.capture?.headers ?? const {},
+              source: _instagramSource(),
+              options: options.toJson(),
+            ),
+          );
+      if (mounted) Navigator.of(context).pop();
+    } catch (err) {
+      if (mounted) {
+        setState(() {
+          _error = err.toString();
+          _submitting = false;
+        });
+      }
+    }
+  }
+
+  /// Avoids collapsing many Instagram titles to the same Instagram.mp4.
+  String _instagramFileName(
+    String preferred, {
+    required String shortcode,
+    required String ext,
+  }) {
+    final cleanedExt = ext.startsWith('.') ? ext.substring(1) : ext;
+    final safeExt = cleanedExt.isEmpty ? 'mp4' : cleanedExt;
+    var base = preferred.trim();
+    if (base.toLowerCase().endsWith('.$safeExt')) {
+      base = base.substring(0, base.length - safeExt.length - 1);
+    }
+    if (base.isEmpty ||
+        base.toLowerCase() == 'instagram' ||
+        base.toLowerCase() == 'video by instagram') {
+      base = shortcode.isNotEmpty ? 'instagram_$shortcode' : 'instagram_video';
+    } else if (shortcode.isNotEmpty && !base.contains(shortcode)) {
+      base = '${base}_$shortcode';
+    }
+    return '$base.$safeExt';
+  }
+
+  String _friendlyInstagramDesktopError(String message) {
+    final lower = message.toLowerCase();
+    if (lower.contains('login') ||
+        lower.contains('cookie') ||
+        lower.contains('private') ||
+        lower.contains('unavailable')) {
+      return 'Could not extract this Instagram video. '
+          'For private videos, open Settings → Instagram and set '
+          'cookies.txt or import from browser. Details: $message';
+    }
+    return message;
+  }
+
   Future<void> _submitDirect(String url) async {
     final directory = Platform.isAndroid
         ? (_directory.text.trim().isEmpty ? 'Downloads' : _directory.text.trim())
@@ -769,6 +973,13 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
     return widget.capture!.source == 'browser_extension'
         ? 'facebook_extension'
         : 'facebook_share';
+  }
+
+  String _instagramSource() {
+    if (widget.capture == null) return 'instagram';
+    return widget.capture!.source == 'browser_extension'
+        ? 'instagram_extension'
+        : 'instagram_share';
   }
 
   String _captureLabel(DownloadCapture capture) {

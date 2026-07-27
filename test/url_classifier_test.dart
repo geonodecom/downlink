@@ -175,5 +175,55 @@ void main() {
         'https://fb.watch/AbCdEfG',
       );
     });
+
+    test('detects instagram hosts and paths', () {
+      expect(
+        UrlClassifier.classify(
+          'https://www.instagram.com/reel/ABC123xyz_/',
+        ),
+        DownloadUrlKind.instagram,
+      );
+      expect(
+        UrlClassifier.classify(
+          'https://www.instagram.com/p/ABC123xyz_/',
+        ),
+        DownloadUrlKind.instagram,
+      );
+      expect(
+        UrlClassifier.classify('https://instagr.am/p/ABC123xyz_/'),
+        DownloadUrlKind.instagram,
+      );
+      expect(
+        UrlClassifier.classify('instagram.com/reel/ABC123xyz_/'),
+        DownloadUrlKind.instagram,
+      );
+    });
+
+    test('normalizeInstagramUrl canonicalizes post and reel links', () {
+      expect(
+        UrlClassifier.normalizeInstagramUrl(
+          'https://m.instagram.com/reel/ABC123xyz_/?igsh=foo',
+        ),
+        'https://www.instagram.com/reel/ABC123xyz_/',
+      );
+      expect(
+        UrlClassifier.normalizeInstagramUrl(
+          'https://www.instagram.com/p/XYZ99abcde/',
+        ),
+        'https://www.instagram.com/p/XYZ99abcde/',
+      );
+      expect(
+        UrlClassifier.normalizeInstagramUrl(
+          'https://www.instagram.com/tv/TVCode12345/',
+        ),
+        'https://www.instagram.com/tv/TVCode12345/',
+      );
+      expect(
+        UrlClassifier.extractInstagramShortcode(
+          'https://www.instagram.com/reel/ABC123xyz_/',
+        ),
+        'ABC123xyz_',
+      );
+    });
   });
 }

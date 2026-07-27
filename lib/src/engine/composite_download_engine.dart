@@ -3,6 +3,8 @@ import 'dart:io';
 import '../aria2/aria2_models.dart';
 import '../facebook/facebook_models.dart';
 import '../facebook/facebook_session.dart';
+import '../instagram/instagram_models.dart';
+import '../instagram/instagram_session.dart';
 import '../ytdlp/ytdlp_models.dart';
 import 'download_engine.dart';
 import 'ytdlp_download_engine.dart';
@@ -13,19 +15,27 @@ class CompositeDownloadEngine implements DownloadEngine {
     required DownloadEngine baseEngine,
     DownloadEngine? youtubeEngine,
     Future<String> Function()? facebookCookieHeader,
+    Future<String> Function()? instagramCookieHeader,
   }) : _baseEngine = baseEngine,
        _youtubeEngine = youtubeEngine ?? YtdlpDownloadEngine(),
        _facebookCookieHeader =
-           facebookCookieHeader ?? _defaultFacebookCookieHeader;
+           facebookCookieHeader ?? _defaultFacebookCookieHeader,
+       _instagramCookieHeader =
+           instagramCookieHeader ?? _defaultInstagramCookieHeader;
 
   final DownloadEngine _baseEngine;
   final DownloadEngine _youtubeEngine;
   final Future<String> Function() _facebookCookieHeader;
+  final Future<String> Function() _instagramCookieHeader;
 
   DownloadEngine get youtubeEngine => _youtubeEngine;
 
   static const _facebookReferer = 'https://www.facebook.com/';
+  static const _instagramReferer = 'https://www.instagram.com/';
   static const _facebookUserAgent =
+      'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 '
+      '(KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36';
+  static const _instagramUserAgent =
       'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 '
       '(KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36';
 
@@ -33,12 +43,18 @@ class CompositeDownloadEngine implements DownloadEngine {
     return FacebookSession().cookieHeader();
   }
 
+  static Future<String> _defaultInstagramCookieHeader() {
+    return InstagramSession().cookieHeader();
+  }
+
   DownloadEngine _engineForOptions(Map<String, Object?>? optionsJson) {
     final kind = optionsJson?['kind']?.toString();
     if (kind == YoutubeDownloadOptions.kind) {
       return _youtubeEngine;
     }
-    if (kind == FacebookDownloadOptions.kind && !Platform.isAndroid) {
+    if ((kind == FacebookDownloadOptions.kind ||
+            kind == InstagramDownloadOptions.kind) &&
+        !Platform.isAndroid) {
       return _youtubeEngine;
     }
     return _baseEngine;
@@ -119,6 +135,29 @@ class CompositeDownloadEngine implements DownloadEngine {
           ...headers,
           'Referer': _facebookReferer,
           'User-Agent': _facebookUserAgent,
+          if (cookie.isNotEmpty) 'Cookie': cookie,
+        },
+        position: position,
+        optionsJson: optionsJson,
+      );
+    }
+    if (kind == InstagramDownloadOptions.kind && Platform.isAndroid) {
+      final directUrl = optionsJson?['directUrl']?.toString() ?? '';
+      if (directUrl.isEmpty) {
+        throw StateError(
+          'Instagram download on Android requires a progressive CDN URL.',
+        );
+      }
+      final cookie = await _instagramCookieHeader();
+      return _baseEngine.addUri(
+        url: directUrl,
+        directory: directory,
+        split: split,
+        fileName: fileName,
+        headers: {
+          ...headers,
+          'Referer': _instagramReferer,
+          'User-Agent': _instagramUserAgent,
           if (cookie.isNotEmpty) 'Cookie': cookie,
         },
         position: position,

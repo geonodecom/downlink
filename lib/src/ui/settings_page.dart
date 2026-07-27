@@ -13,6 +13,7 @@ import '../platform/executable_finder.dart';
 import '../providers.dart';
 import '../ytdlp/android_ffmpeg.dart';
 import 'widgets/facebook_login_dialog.dart';
+import 'widgets/instagram_login_dialog.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -57,17 +58,21 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
   late final TextEditingController _ytdlpPath;
   late final TextEditingController _ffmpegPath;
   late final TextEditingController _facebookCookiesPath;
+  late final TextEditingController _instagramCookiesPath;
   late int _maxActive;
   late int _split;
   late String _themeMode;
   late String _youtubeFormatPreset;
   late String _facebookCookiesFromBrowser;
+  late String _instagramCookiesFromBrowser;
   final List<_ValidationMessage> _messages = [];
   var _saving = false;
   var _checkingBundledTools = false;
   String? _bundledToolsStatus;
   var _facebookLoggedIn = false;
   var _facebookSessionLoading = true;
+  var _instagramLoggedIn = false;
+  var _instagramSessionLoading = true;
 
   @override
   void initState() {
@@ -78,16 +83,21 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
     _ffmpegPath = TextEditingController(text: widget.settings.ffmpegPath);
     _facebookCookiesPath =
         TextEditingController(text: widget.settings.facebookCookiesPath);
+    _instagramCookiesPath =
+        TextEditingController(text: widget.settings.instagramCookiesPath);
     _maxActive = widget.settings.maxActiveDownloads;
     _split = widget.settings.defaultSplit;
     _themeMode = widget.settings.themeMode;
     _youtubeFormatPreset = widget.settings.youtubeFormatPreset;
     _facebookCookiesFromBrowser = widget.settings.facebookCookiesFromBrowser;
+    _instagramCookiesFromBrowser = widget.settings.instagramCookiesFromBrowser;
     unawaited(_refreshBundledToolsStatus());
     if (Platform.isAndroid) {
       unawaited(_refreshFacebookSession());
+      unawaited(_refreshInstagramSession());
     } else {
       _facebookSessionLoading = false;
+      _instagramSessionLoading = false;
     }
   }
 
@@ -98,6 +108,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
     _ytdlpPath.dispose();
     _ffmpegPath.dispose();
     _facebookCookiesPath.dispose();
+    _instagramCookiesPath.dispose();
     super.dispose();
   }
 
@@ -355,6 +366,97 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
           ),
         ],
         const SizedBox(height: 20),
+        _SectionLabel(label: 'Instagram'),
+        const SizedBox(height: 8),
+        if (isAndroid) ...[
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Instagram session'),
+            subtitle: Text(
+              _instagramSessionLoading
+                  ? 'Checking…'
+                  : _instagramLoggedIn
+                      ? 'Logged in — private posts/reels available'
+                      : 'Not logged in — public posts/reels still work',
+            ),
+            trailing: _instagramSessionLoading
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : null,
+          ),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              FilledButton.tonal(
+                onPressed: _instagramSessionLoading ? null : _loginInstagram,
+                child: const Text('Log in'),
+              ),
+              OutlinedButton(
+                onPressed: !_instagramLoggedIn || _instagramSessionLoading
+                    ? null
+                    : _logoutInstagram,
+                child: const Text('Log out'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Private Instagram posts/reels need a login on this device. '
+            'Public posts/reels usually work without login. '
+            'Session cookies can access your account — log out on shared devices. '
+            'Cookies are never sent to Geonode servers.',
+            style: TextStyle(fontSize: 12),
+          ),
+        ] else ...[
+          const Text(
+            'Private Instagram posts/reels need cookies for yt-dlp. '
+            'Public posts/reels work without cookies. Cookie data stays on this PC.',
+            style: TextStyle(fontSize: 12),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _instagramCookiesPath,
+                  decoration: const InputDecoration(
+                    labelText: 'cookies.txt (Netscape)',
+                    hintText: 'Exported Instagram cookies for yt-dlp',
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              FilledButton.tonal(
+                onPressed: _pickInstagramCookiesFile,
+                child: const Text('Browse'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<String>(
+            initialValue: _instagramCookiesFromBrowser.isEmpty
+                ? ''
+                : _instagramCookiesFromBrowser,
+            decoration: const InputDecoration(
+              labelText: 'Import cookies from browser',
+              helperText:
+                  'Close the browser first. Takes priority after cookies.txt.',
+            ),
+            items: const [
+              DropdownMenuItem(value: '', child: Text('None')),
+              DropdownMenuItem(value: 'chrome', child: Text('Chrome')),
+              DropdownMenuItem(value: 'edge', child: Text('Edge')),
+              DropdownMenuItem(value: 'firefox', child: Text('Firefox')),
+            ],
+            onChanged: (value) => setState(
+              () => _instagramCookiesFromBrowser = value ?? '',
+            ),
+          ),
+        ],
+        const SizedBox(height: 20),
         _SectionLabel(label: 'Appearance'),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
@@ -452,6 +554,62 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
     );
     if (file != null) {
       setState(() => _facebookCookiesPath.text = file.path);
+    }
+  }
+
+  Future<void> _refreshInstagramSession() async {
+    setState(() => _instagramSessionLoading = true);
+    final loggedIn = await ref.read(instagramSessionProvider).isLoggedIn;
+    if (!mounted) return;
+    setState(() {
+      _instagramLoggedIn = loggedIn;
+      _instagramSessionLoading = false;
+    });
+  }
+
+  Future<void> _loginInstagram() async {
+    final ok = await showInstagramLoginDialog(
+      context,
+      session: ref.read(instagramSessionProvider),
+    );
+    if (ok == true) {
+      await _refreshInstagramSession();
+      if (!mounted) return;
+      setState(() {
+        _messages.add(
+          const _ValidationMessage.success('Instagram session saved.'),
+        );
+      });
+    }
+  }
+
+  Future<void> _logoutInstagram() async {
+    await ref.read(instagramSessionProvider).clear();
+    if (Platform.isAndroid) {
+      try {
+        await WebViewCookieManager().clearCookies();
+      } catch (_) {}
+    }
+    await _refreshInstagramSession();
+    if (!mounted) return;
+    setState(() {
+      _messages.add(
+        const _ValidationMessage.success('Instagram session cleared.'),
+      );
+    });
+  }
+
+  Future<void> _pickInstagramCookiesFile() async {
+    final file = await openFile(
+      acceptedTypeGroups: [
+        const XTypeGroup(
+          label: 'cookies',
+          extensions: ['txt'],
+        ),
+      ],
+    );
+    if (file != null) {
+      setState(() => _instagramCookiesPath.text = file.path);
     }
   }
 
@@ -638,6 +796,10 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
               facebookCookiesPath: isAndroid ? '' : _facebookCookiesPath.text.trim(),
               facebookCookiesFromBrowser:
                   isAndroid ? '' : _facebookCookiesFromBrowser,
+              instagramCookiesPath:
+                  isAndroid ? '' : _instagramCookiesPath.text.trim(),
+              instagramCookiesFromBrowser:
+                  isAndroid ? '' : _instagramCookiesFromBrowser,
             ),
           );
     } catch (error) {

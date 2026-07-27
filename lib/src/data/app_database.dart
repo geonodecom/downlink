@@ -96,6 +96,8 @@ class GeonodeSettings {
     required this.themeMode,
     this.facebookCookiesPath = '',
     this.facebookCookiesFromBrowser = '',
+    this.instagramCookiesPath = '',
+    this.instagramCookiesFromBrowser = '',
   });
 
   final String downloadDirectory;
@@ -108,6 +110,8 @@ class GeonodeSettings {
   final String themeMode;
   final String facebookCookiesPath;
   final String facebookCookiesFromBrowser;
+  final String instagramCookiesPath;
+  final String instagramCookiesFromBrowser;
 
   GeonodeSettings copyWith({
     String? downloadDirectory,
@@ -120,6 +124,8 @@ class GeonodeSettings {
     String? themeMode,
     String? facebookCookiesPath,
     String? facebookCookiesFromBrowser,
+    String? instagramCookiesPath,
+    String? instagramCookiesFromBrowser,
   }) {
     return GeonodeSettings(
       downloadDirectory: downloadDirectory ?? this.downloadDirectory,
@@ -135,6 +141,10 @@ class GeonodeSettings {
           facebookCookiesPath ?? this.facebookCookiesPath,
       facebookCookiesFromBrowser:
           facebookCookiesFromBrowser ?? this.facebookCookiesFromBrowser,
+      instagramCookiesPath:
+          instagramCookiesPath ?? this.instagramCookiesPath,
+      instagramCookiesFromBrowser:
+          instagramCookiesFromBrowser ?? this.instagramCookiesFromBrowser,
     );
   }
 }

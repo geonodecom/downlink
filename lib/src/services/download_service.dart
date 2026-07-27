@@ -10,6 +10,7 @@ import '../data/app_database.dart';
 import '../data/download_repository.dart';
 import '../engine/download_engine.dart';
 import '../facebook/facebook_models.dart';
+import '../instagram/instagram_models.dart';
 import '../ytdlp/ytdlp_models.dart';
 import 'diagnostics.dart';
 import 'download_probe.dart';
@@ -389,7 +390,8 @@ class DownloadService {
   bool _shouldProbe(NewDownload input) {
     final kind = input.options['kind']?.toString();
     if (kind == YoutubeDownloadOptions.kind ||
-        kind == FacebookDownloadOptions.kind) {
+        kind == FacebookDownloadOptions.kind ||
+        kind == InstagramDownloadOptions.kind) {
       return false;
     }
     return UrlClassifier.classify(input.url) == DownloadUrlKind.direct;
