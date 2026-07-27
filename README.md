@@ -18,7 +18,7 @@ service with segmented HTTP Range downloads and publishes completed files to the
 system Downloads collection via MediaStore.
 
 The app focuses on direct HTTP/HTTPS file downloads, YouTube, Facebook, and
-Instagram video extraction (including private access via session cookies),
+Instagram reel/video extraction (including private access via session cookies),
 queueing, resume, and useful download details. Torrent downloads are not
 implemented yet; see [Roadmap](#roadmap).
 
@@ -38,8 +38,8 @@ implemented yet; see [Roadmap](#roadmap).
 - [x] YouTube playlists (queue each entry) and common URL styles (watch, Shorts, live, embed, music, youtu.be)
 - [x] Facebook / fb.watch video download (desktop: yt-dlp; Android: progressive CDN extraction + HTTP)
 - [x] Private / friends-only Facebook videos via in-app session login (Android WebView) or desktop cookies.txt / browser cookie import
-- [x] Instagram posts / reels download (desktop: yt-dlp; Android: progressive CDN extraction + HTTP)
-- [x] Private Instagram videos via in-app session login (Android WebView) or desktop cookies.txt / browser cookie import
+- [x] Instagram reels / videos download (desktop: yt-dlp; Android: progressive CDN extraction + HTTP) — photo posts and carousels are not supported
+- [x] Private Instagram reels/videos via in-app session login (Android WebView) or desktop cookies.txt / browser cookie import
 
 ## Roadmap
 
@@ -118,12 +118,12 @@ list as desktop). Public Facebook videos are resolved to progressive CDN MP4
 URLs and downloaded over HTTP (no yt-dlp process). Private Facebook videos use
 an in-app WebView login that stores session cookies on-device (Settings →
 Facebook); those cookies are sent with page and CDN requests. Instagram
-posts/reels follow the same split: desktop uses yt-dlp; Android extracts
-progressive CDN MP4s and downloads over HTTP. Private Instagram content uses
-Settings → Instagram (Android WebView login, or desktop cookies.txt /
-`--cookies-from-browser`). On desktop, yt-dlp can also use a Netscape
-cookies.txt file or `--cookies-from-browser` for Facebook and Instagram
-(separately configured).
+reels and videos follow the same split: desktop uses yt-dlp; Android extracts
+progressive CDN MP4s and downloads over HTTP. Photo posts and image carousels
+are not supported. Private Instagram reels/videos use Settings → Instagram
+(Android WebView login, or desktop cookies.txt / `--cookies-from-browser`).
+On desktop, yt-dlp can also use a Netscape cookies.txt file or
+`--cookies-from-browser` for Facebook and Instagram (separately configured).
 APK size grows substantially
 because static ffmpeg is packaged per ABI. YouTube downloading may conflict
 with Play Store policy; sideload/dev builds are the safest target for now.
