@@ -116,4 +116,48 @@ void main() {
     expect(selectable.first.isCombined, isTrue);
     expect(info.defaultFormatId(YoutubeFormatPreset.bestMp4), isNotNull);
   });
+
+  test('dedupes equivalent TikTok format twins in the picker', () {
+    const info = YtdlpVideoInfo(
+      id: '1',
+      title: 'TikTok',
+      duration: 10,
+      formats: [
+        YtdlpFormat(
+          formatId: 'h264_720p-0',
+          ext: 'mp4',
+          resolution: '1280x720',
+          note: '',
+          fileSize: 122000000,
+          vcodec: 'h264',
+          acodec: 'aac',
+          format: 'a',
+        ),
+        YtdlpFormat(
+          formatId: 'h264_720p-1',
+          ext: 'mp4',
+          resolution: '1280x720',
+          note: '',
+          fileSize: 122000000,
+          vcodec: 'h264',
+          acodec: 'aac',
+          format: 'b',
+        ),
+        YtdlpFormat(
+          formatId: 'download',
+          ext: 'mp4',
+          resolution: '',
+          note: 'watermarked',
+          fileSize: null,
+          vcodec: 'h264',
+          acodec: 'aac',
+          format: 'c',
+        ),
+      ],
+    );
+
+    final selectable = info.selectableFormats();
+    expect(selectable.length, 2);
+    expect(selectable.where((f) => f.resolution == '1280x720').length, 1);
+  });
 }

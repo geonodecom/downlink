@@ -413,6 +413,22 @@ class DownloadRepository {
           key: 'facebook_cookies_from_browser',
           value: settings.facebookCookiesFromBrowser,
         ),
+        AppSettingsCompanion.insert(
+          key: 'instagram_cookies_path',
+          value: settings.instagramCookiesPath,
+        ),
+        AppSettingsCompanion.insert(
+          key: 'instagram_cookies_from_browser',
+          value: settings.instagramCookiesFromBrowser,
+        ),
+        AppSettingsCompanion.insert(
+          key: 'tiktok_cookies_path',
+          value: settings.tiktokCookiesPath,
+        ),
+        AppSettingsCompanion.insert(
+          key: 'tiktok_cookies_from_browser',
+          value: settings.tiktokCookiesFromBrowser,
+        ),
       ]);
     });
   }
@@ -433,6 +449,10 @@ class DownloadRepository {
         themeMode: 'system',
         facebookCookiesPath: '',
         facebookCookiesFromBrowser: '',
+        instagramCookiesPath: '',
+        instagramCookiesFromBrowser: '',
+        tiktokCookiesPath: '',
+        tiktokCookiesFromBrowser: '',
       ),
     );
   }
@@ -458,6 +478,11 @@ class DownloadRepository {
       facebookCookiesPath: values['facebook_cookies_path'] ?? '',
       facebookCookiesFromBrowser:
           values['facebook_cookies_from_browser'] ?? '',
+      instagramCookiesPath: values['instagram_cookies_path'] ?? '',
+      instagramCookiesFromBrowser:
+          values['instagram_cookies_from_browser'] ?? '',
+      tiktokCookiesPath: values['tiktok_cookies_path'] ?? '',
+      tiktokCookiesFromBrowser: values['tiktok_cookies_from_browser'] ?? '',
     );
   }
 }

@@ -13,6 +13,8 @@ import '../platform/executable_finder.dart';
 import '../providers.dart';
 import '../ytdlp/android_ffmpeg.dart';
 import 'widgets/facebook_login_dialog.dart';
+import 'widgets/instagram_login_dialog.dart';
+import 'widgets/tiktok_login_dialog.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -57,17 +59,25 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
   late final TextEditingController _ytdlpPath;
   late final TextEditingController _ffmpegPath;
   late final TextEditingController _facebookCookiesPath;
+  late final TextEditingController _instagramCookiesPath;
+  late final TextEditingController _tiktokCookiesPath;
   late int _maxActive;
   late int _split;
   late String _themeMode;
   late String _youtubeFormatPreset;
   late String _facebookCookiesFromBrowser;
+  late String _instagramCookiesFromBrowser;
+  late String _tiktokCookiesFromBrowser;
   final List<_ValidationMessage> _messages = [];
   var _saving = false;
   var _checkingBundledTools = false;
   String? _bundledToolsStatus;
   var _facebookLoggedIn = false;
   var _facebookSessionLoading = true;
+  var _instagramLoggedIn = false;
+  var _instagramSessionLoading = true;
+  var _tiktokLoggedIn = false;
+  var _tiktokSessionLoading = true;
 
   @override
   void initState() {
@@ -78,16 +88,26 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
     _ffmpegPath = TextEditingController(text: widget.settings.ffmpegPath);
     _facebookCookiesPath =
         TextEditingController(text: widget.settings.facebookCookiesPath);
+    _instagramCookiesPath =
+        TextEditingController(text: widget.settings.instagramCookiesPath);
+    _tiktokCookiesPath =
+        TextEditingController(text: widget.settings.tiktokCookiesPath);
     _maxActive = widget.settings.maxActiveDownloads;
     _split = widget.settings.defaultSplit;
     _themeMode = widget.settings.themeMode;
     _youtubeFormatPreset = widget.settings.youtubeFormatPreset;
     _facebookCookiesFromBrowser = widget.settings.facebookCookiesFromBrowser;
+    _instagramCookiesFromBrowser = widget.settings.instagramCookiesFromBrowser;
+    _tiktokCookiesFromBrowser = widget.settings.tiktokCookiesFromBrowser;
     unawaited(_refreshBundledToolsStatus());
     if (Platform.isAndroid) {
       unawaited(_refreshFacebookSession());
+      unawaited(_refreshInstagramSession());
+      unawaited(_refreshTikTokSession());
     } else {
       _facebookSessionLoading = false;
+      _instagramSessionLoading = false;
+      _tiktokSessionLoading = false;
     }
   }
 
@@ -98,6 +118,8 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
     _ytdlpPath.dispose();
     _ffmpegPath.dispose();
     _facebookCookiesPath.dispose();
+    _instagramCookiesPath.dispose();
+    _tiktokCookiesPath.dispose();
     super.dispose();
   }
 
@@ -355,6 +377,190 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
           ),
         ],
         const SizedBox(height: 20),
+        _SectionLabel(label: 'Instagram'),
+        const SizedBox(height: 8),
+        if (isAndroid) ...[
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Instagram session'),
+            subtitle: Text(
+              _instagramSessionLoading
+                  ? 'Checking…'
+                  : _instagramLoggedIn
+                      ? 'Logged in — private posts/reels available'
+                      : 'Not logged in — public posts/reels still work',
+            ),
+            trailing: _instagramSessionLoading
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : null,
+          ),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              FilledButton.tonal(
+                onPressed: _instagramSessionLoading ? null : _loginInstagram,
+                child: const Text('Log in'),
+              ),
+              OutlinedButton(
+                onPressed: !_instagramLoggedIn || _instagramSessionLoading
+                    ? null
+                    : _logoutInstagram,
+                child: const Text('Log out'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Private Instagram posts/reels need a login on this device. '
+            'Public posts/reels usually work without login. '
+            'Session cookies can access your account — log out on shared devices. '
+            'Cookies are never sent to Geonode servers.',
+            style: TextStyle(fontSize: 12),
+          ),
+        ] else ...[
+          const Text(
+            'Private Instagram posts/reels need cookies for yt-dlp. '
+            'Public posts/reels work without cookies. Cookie data stays on this PC.',
+            style: TextStyle(fontSize: 12),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _instagramCookiesPath,
+                  decoration: const InputDecoration(
+                    labelText: 'cookies.txt (Netscape)',
+                    hintText: 'Exported Instagram cookies for yt-dlp',
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              FilledButton.tonal(
+                onPressed: _pickInstagramCookiesFile,
+                child: const Text('Browse'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<String>(
+            initialValue: _instagramCookiesFromBrowser.isEmpty
+                ? ''
+                : _instagramCookiesFromBrowser,
+            decoration: const InputDecoration(
+              labelText: 'Import cookies from browser',
+              helperText:
+                  'Close the browser first. Takes priority after cookies.txt.',
+            ),
+            items: const [
+              DropdownMenuItem(value: '', child: Text('None')),
+              DropdownMenuItem(value: 'chrome', child: Text('Chrome')),
+              DropdownMenuItem(value: 'edge', child: Text('Edge')),
+              DropdownMenuItem(value: 'firefox', child: Text('Firefox')),
+            ],
+            onChanged: (value) => setState(
+              () => _instagramCookiesFromBrowser = value ?? '',
+            ),
+          ),
+        ],
+        const SizedBox(height: 20),
+        _SectionLabel(label: 'TikTok'),
+        const SizedBox(height: 8),
+        if (isAndroid) ...[
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('TikTok session'),
+            subtitle: Text(
+              _tiktokSessionLoading
+                  ? 'Checking…'
+                  : _tiktokLoggedIn
+                      ? 'Logged in — private videos available'
+                      : 'Not logged in — public videos still work',
+            ),
+            trailing: _tiktokSessionLoading
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : null,
+          ),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              FilledButton.tonal(
+                onPressed: _tiktokSessionLoading ? null : _loginTikTok,
+                child: const Text('Log in'),
+              ),
+              OutlinedButton(
+                onPressed: !_tiktokLoggedIn || _tiktokSessionLoading
+                    ? null
+                    : _logoutTikTok,
+                child: const Text('Log out'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Private TikTok videos need a login on this device. '
+            'Public single-video links usually work without login. '
+            'Session cookies can access your account — log out on shared devices. '
+            'Cookies are never sent to Geonode servers.',
+            style: TextStyle(fontSize: 12),
+          ),
+        ] else ...[
+          const Text(
+            'Private TikTok videos need cookies for yt-dlp. '
+            'Public videos work without cookies when yt-dlp can solve TikTok’s '
+            'page challenge — use a recent nightly yt-dlp '
+            '(yt-dlp --update-to nightly). Cookie data stays on this PC.',
+            style: TextStyle(fontSize: 12),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _tiktokCookiesPath,
+                  decoration: const InputDecoration(
+                    labelText: 'cookies.txt (Netscape)',
+                    hintText: 'Exported TikTok cookies for yt-dlp',
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              FilledButton.tonal(
+                onPressed: _pickTikTokCookiesFile,
+                child: const Text('Browse'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<String>(
+            initialValue: _tiktokCookiesFromBrowser.isEmpty
+                ? ''
+                : _tiktokCookiesFromBrowser,
+            decoration: const InputDecoration(
+              labelText: 'Import cookies from browser',
+              helperText:
+                  'Close the browser first. Takes priority after cookies.txt.',
+            ),
+            items: const [
+              DropdownMenuItem(value: '', child: Text('None')),
+              DropdownMenuItem(value: 'chrome', child: Text('Chrome')),
+              DropdownMenuItem(value: 'edge', child: Text('Edge')),
+              DropdownMenuItem(value: 'firefox', child: Text('Firefox')),
+            ],
+            onChanged: (value) => setState(
+              () => _tiktokCookiesFromBrowser = value ?? '',
+            ),
+          ),
+        ],
+        const SizedBox(height: 20),
         _SectionLabel(label: 'Appearance'),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
@@ -452,6 +658,118 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
     );
     if (file != null) {
       setState(() => _facebookCookiesPath.text = file.path);
+    }
+  }
+
+  Future<void> _refreshInstagramSession() async {
+    setState(() => _instagramSessionLoading = true);
+    final loggedIn = await ref.read(instagramSessionProvider).isLoggedIn;
+    if (!mounted) return;
+    setState(() {
+      _instagramLoggedIn = loggedIn;
+      _instagramSessionLoading = false;
+    });
+  }
+
+  Future<void> _loginInstagram() async {
+    final ok = await showInstagramLoginDialog(
+      context,
+      session: ref.read(instagramSessionProvider),
+    );
+    if (ok == true) {
+      await _refreshInstagramSession();
+      if (!mounted) return;
+      setState(() {
+        _messages.add(
+          const _ValidationMessage.success('Instagram session saved.'),
+        );
+      });
+    }
+  }
+
+  Future<void> _logoutInstagram() async {
+    await ref.read(instagramSessionProvider).clear();
+    if (Platform.isAndroid) {
+      try {
+        await WebViewCookieManager().clearCookies();
+      } catch (_) {}
+    }
+    await _refreshInstagramSession();
+    if (!mounted) return;
+    setState(() {
+      _messages.add(
+        const _ValidationMessage.success('Instagram session cleared.'),
+      );
+    });
+  }
+
+  Future<void> _pickInstagramCookiesFile() async {
+    final file = await openFile(
+      acceptedTypeGroups: [
+        const XTypeGroup(
+          label: 'cookies',
+          extensions: ['txt'],
+        ),
+      ],
+    );
+    if (file != null) {
+      setState(() => _instagramCookiesPath.text = file.path);
+    }
+  }
+
+  Future<void> _refreshTikTokSession() async {
+    setState(() => _tiktokSessionLoading = true);
+    final loggedIn = await ref.read(tiktokSessionProvider).isLoggedIn;
+    if (!mounted) return;
+    setState(() {
+      _tiktokLoggedIn = loggedIn;
+      _tiktokSessionLoading = false;
+    });
+  }
+
+  Future<void> _loginTikTok() async {
+    final ok = await showTikTokLoginDialog(
+      context,
+      session: ref.read(tiktokSessionProvider),
+    );
+    if (ok == true) {
+      await _refreshTikTokSession();
+      if (!mounted) return;
+      setState(() {
+        _messages.add(
+          const _ValidationMessage.success('TikTok session saved.'),
+        );
+      });
+    }
+  }
+
+  Future<void> _logoutTikTok() async {
+    await ref.read(tiktokSessionProvider).clear();
+    if (Platform.isAndroid) {
+      try {
+        await WebViewCookieManager().clearCookies();
+      } catch (_) {}
+    }
+    await _refreshTikTokSession();
+    if (!mounted) return;
+    setState(() {
+      _messages.add(
+        const _ValidationMessage.success('TikTok session cleared.'),
+      );
+    });
+  }
+
+  Future<void> _pickTikTokCookiesFile() async {
+    final file = await openFile(
+      acceptedTypeGroups: [
+        const XTypeGroup(
+          label: 'cookies',
+          extensions: ['txt'],
+        ),
+      ],
+    );
+    if (file != null) {
+      setState(() => _tiktokCookiesPath.text = file.path);
     }
   }
 
@@ -638,6 +956,13 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
               facebookCookiesPath: isAndroid ? '' : _facebookCookiesPath.text.trim(),
               facebookCookiesFromBrowser:
                   isAndroid ? '' : _facebookCookiesFromBrowser,
+              instagramCookiesPath:
+                  isAndroid ? '' : _instagramCookiesPath.text.trim(),
+              instagramCookiesFromBrowser:
+                  isAndroid ? '' : _instagramCookiesFromBrowser,
+              tiktokCookiesPath: isAndroid ? '' : _tiktokCookiesPath.text.trim(),
+              tiktokCookiesFromBrowser:
+                  isAndroid ? '' : _tiktokCookiesFromBrowser,
             ),
           );
     } catch (error) {

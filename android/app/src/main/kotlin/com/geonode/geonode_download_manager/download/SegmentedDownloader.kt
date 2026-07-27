@@ -173,10 +173,7 @@ class SegmentedDownloader(
         connection.instanceFollowRedirects = true
         connection.connectTimeout = 30_000
         connection.readTimeout = 60_000
-        connection.setRequestProperty("User-Agent", "GeonodeDownloadManager/0.1")
-        for ((key, value) in task.headers) {
-            connection.setRequestProperty(key, value)
-        }
+        applyHeaders(connection)
         if (end >= start && start >= 0) {
             connection.setRequestProperty("Range", "bytes=$start-$end")
         }
@@ -194,19 +191,33 @@ class SegmentedDownloader(
         head.instanceFollowRedirects = true
         head.connectTimeout = 20_000
         head.readTimeout = 20_000
-        head.setRequestProperty("User-Agent", "GeonodeDownloadManager/0.1")
-        for ((key, value) in task.headers) {
-            head.setRequestProperty(key, value)
-        }
+        applyHeaders(head)
         try {
             head.connect()
+            val code = head.responseCode
+            // TikTok/CDN often rejects HEAD with 403/405; fall back to unknown size.
+            if (code !in 200..299) {
+                return ProbeMeta(0, false, fileNameFromUrl(task.url))
+            }
             val length = head.getHeaderField("Content-Length")?.toLongOrNull() ?: 0L
             val acceptRanges = head.getHeaderField("Accept-Ranges")?.contains("bytes") == true
             val disposition = head.getHeaderField("Content-Disposition")
             val name = parseFileName(disposition) ?: fileNameFromUrl(task.url)
             return ProbeMeta(length, acceptRanges || length > 0, name)
+        } catch (_: Exception) {
+            return ProbeMeta(0, false, fileNameFromUrl(task.url))
         } finally {
             head.disconnect()
+        }
+    }
+
+    private fun applyHeaders(connection: HttpURLConnection) {
+        val hasUserAgent = task.headers.keys.any { it.equals("User-Agent", ignoreCase = true) }
+        if (!hasUserAgent) {
+            connection.setRequestProperty("User-Agent", "GeonodeDownloadManager/0.1")
+        }
+        for ((key, value) in task.headers) {
+            connection.setRequestProperty(key, value)
         }
     }
 

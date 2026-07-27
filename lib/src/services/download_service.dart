@@ -10,6 +10,8 @@ import '../data/app_database.dart';
 import '../data/download_repository.dart';
 import '../engine/download_engine.dart';
 import '../facebook/facebook_models.dart';
+import '../instagram/instagram_models.dart';
+import '../tiktok/tiktok_models.dart';
 import '../ytdlp/ytdlp_models.dart';
 import 'diagnostics.dart';
 import 'download_probe.dart';
@@ -311,6 +313,7 @@ class DownloadService {
 
   Future<void> _startEntity(DownloadEntity entity) async {
     try {
+      _ensureExtractorOptions(entity);
       if (entity.gid != null) {
         final status = await _engine.tellStatus(entity.gid!);
         final restarted = status.status == 'error' &&
@@ -386,13 +389,34 @@ class DownloadService {
     return basename.isEmpty ? null : basename;
   }
 
+  /// Blocks downloading TikTok/IG/FB/YouTube page URLs as raw HTTP files
+  /// (which produces extension-less IDs and tiny HTML payloads).
+  void _ensureExtractorOptions(DownloadEntity entity) {
+    final kind = UrlClassifier.classify(entity.url);
+    final needsOptions = kind == DownloadUrlKind.tiktok ||
+        kind == DownloadUrlKind.instagram ||
+        kind == DownloadUrlKind.facebook ||
+        kind == DownloadUrlKind.youtube ||
+        kind == DownloadUrlKind.youtubePlaylist;
+    if (!needsOptions) return;
+    if (isExtractorDownloadOptions(entity.optionsJson)) return;
+    throw StateError(
+      'This URL needs format selection before download. '
+      'Use Add Download → Choose format.',
+    );
+  }
+
   bool _shouldProbe(NewDownload input) {
     final kind = input.options['kind']?.toString();
     if (kind == YoutubeDownloadOptions.kind ||
-        kind == FacebookDownloadOptions.kind) {
+        kind == FacebookDownloadOptions.kind ||
+        kind == InstagramDownloadOptions.kind ||
+        kind == TikTokDownloadOptions.kind) {
       return false;
     }
-    return UrlClassifier.classify(input.url) == DownloadUrlKind.direct;
+    // Never probe extractor site pages as if they were direct files.
+    final urlKind = UrlClassifier.classify(input.url);
+    return urlKind == DownloadUrlKind.direct;
   }
 
   Map<String, Object?>? _optionsFor(DownloadEntity entity) {

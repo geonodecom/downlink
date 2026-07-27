@@ -242,13 +242,13 @@ class YtdlpVideoInfo {
     }
 
     result.addAll(audioOnly.take(4));
-    final deduped = _dedupeByFormatId(result);
+    final deduped = _dedupeEquivalentFormats(_dedupeByFormatId(result));
     if (deduped.isNotEmpty) return deduped;
 
     // Last resort: show raw entries so Facebook-style metadata still works.
     final fallback = formats.where((f) => f.formatId.isNotEmpty).toList()
       ..sort(_compareFormats);
-    return _dedupeByFormatId(fallback);
+    return _dedupeEquivalentFormats(_dedupeByFormatId(fallback));
   }
 
   String? defaultFormatId(YoutubeFormatPreset preset) {
@@ -367,6 +367,28 @@ List<YtdlpFormat> _dedupeByFormatId(List<YtdlpFormat> formats) {
   final result = <YtdlpFormat>[];
   for (final format in formats) {
     if (seen.add(format.formatId)) {
+      result.add(format);
+    }
+  }
+  return result;
+}
+
+/// Collapses TikTok-style `-0`/`-1` twins that share the same picker label.
+List<YtdlpFormat> _dedupeEquivalentFormats(List<YtdlpFormat> formats) {
+  final seen = <String>{};
+  final result = <YtdlpFormat>[];
+  for (final format in formats) {
+    final key = [
+      format.resolution,
+      format.ext.toLowerCase(),
+      '${format.fileSize ?? 0}',
+      format.vcodec,
+      format.acodec,
+      format.note.toLowerCase(),
+      format.hasVideo ? 'v' : '',
+      format.hasAudio ? 'a' : '',
+    ].join('|');
+    if (seen.add(key)) {
       result.add(format);
     }
   }

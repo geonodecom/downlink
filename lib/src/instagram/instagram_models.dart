@@ -1,18 +1,14 @@
 import 'dart:convert';
 
-import '../instagram/instagram_models.dart';
-import '../tiktok/tiktok_models.dart';
-import '../ytdlp/ytdlp_models.dart';
-
-class FacebookDownloadOptions {
-  const FacebookDownloadOptions({
+class InstagramDownloadOptions {
+  const InstagramDownloadOptions({
     required this.formatId,
     required this.title,
     required this.ext,
     this.directUrl = '',
   });
 
-  static const kind = 'facebook';
+  static const kind = 'instagram';
 
   final String formatId;
   final String title;
@@ -31,8 +27,8 @@ class FacebookDownloadOptions {
     };
   }
 
-  factory FacebookDownloadOptions.fromJson(Map<String, Object?> json) {
-    return FacebookDownloadOptions(
+  factory InstagramDownloadOptions.fromJson(Map<String, Object?> json) {
+    return InstagramDownloadOptions(
       formatId: json['formatId']?.toString() ?? '',
       title: json['title']?.toString() ?? '',
       ext: json['ext']?.toString() ?? 'mp4',
@@ -42,7 +38,7 @@ class FacebookDownloadOptions {
 
   String get sanitizedFileName {
     final base = _sanitizeFileName(title);
-    if (base.isEmpty) return 'facebook_video.$ext';
+    if (base.isEmpty) return 'instagram_video.$ext';
     return '$base.$ext';
   }
 
@@ -56,26 +52,19 @@ class FacebookDownloadOptions {
   }
 }
 
-FacebookDownloadOptions? facebookOptionsFromJson(String? optionsJson) {
+InstagramDownloadOptions? instagramOptionsFromJson(String? optionsJson) {
   if (optionsJson == null || optionsJson.trim().isEmpty) return null;
   try {
     final decoded = jsonDecode(optionsJson);
     if (decoded is! Map) return null;
     final map = decoded.cast<String, Object?>();
-    if (map['kind']?.toString() != FacebookDownloadOptions.kind) return null;
-    return FacebookDownloadOptions.fromJson(map);
+    if (map['kind']?.toString() != InstagramDownloadOptions.kind) return null;
+    return InstagramDownloadOptions.fromJson(map);
   } catch (_) {
     return null;
   }
 }
 
-bool isFacebookDownloadOptions(String? optionsJson) {
-  return facebookOptionsFromJson(optionsJson) != null;
-}
-
-bool isExtractorDownloadOptions(String? optionsJson) {
-  return isYoutubeDownloadOptions(optionsJson) ||
-      isFacebookDownloadOptions(optionsJson) ||
-      isInstagramDownloadOptions(optionsJson) ||
-      isTikTokDownloadOptions(optionsJson);
+bool isInstagramDownloadOptions(String? optionsJson) {
+  return instagramOptionsFromJson(optionsJson) != null;
 }

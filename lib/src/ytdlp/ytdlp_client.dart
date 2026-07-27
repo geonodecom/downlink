@@ -2,6 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import '../facebook/facebook_session.dart';
+import '../instagram/instagram_session.dart';
+import '../services/url_classifier.dart';
+import '../tiktok/tiktok_session.dart';
 import 'youtube_metadata_client.dart';
 import 'ytdlp_executable.dart';
 import 'ytdlp_models.dart';
@@ -23,14 +26,24 @@ class YtdlpClient implements YoutubeMetadataClient {
     this.ffmpegOverride = '',
     this.facebookCookieArgs = const FacebookCookieArgs(),
     FacebookSession? facebookSession,
+    this.instagramCookieArgs = const InstagramCookieArgs(),
+    InstagramSession? instagramSession,
+    this.tiktokCookieArgs = const TikTokCookieArgs(),
+    TikTokSession? tiktokSession,
   }) : _resolver = resolver ?? YtdlpExecutableResolver(),
-       _facebookSession = facebookSession ?? FacebookSession();
+       _facebookSession = facebookSession ?? FacebookSession(),
+       _instagramSession = instagramSession ?? InstagramSession(),
+       _tiktokSession = tiktokSession ?? TikTokSession();
 
   final YtdlpExecutableResolver _resolver;
   final String ytdlpOverride;
   final String ffmpegOverride;
   final FacebookCookieArgs facebookCookieArgs;
   final FacebookSession _facebookSession;
+  final InstagramCookieArgs instagramCookieArgs;
+  final InstagramSession _instagramSession;
+  final TikTokCookieArgs tiktokCookieArgs;
+  final TikTokSession _tiktokSession;
 
   static final Map<String, String> _utf8ProcessEnvironment = {
     'PYTHONIOENCODING': 'utf-8',
@@ -52,33 +65,51 @@ class YtdlpClient implements YoutubeMetadataClient {
       ffmpegOverride: ffmpegOverride,
     );
 
-    final result = await _runYtdlp(binaries.ytdlpPath, [
-      '--no-playlist',
-      '--dump-single-json',
-      '--skip-download',
-      '--no-warnings',
-      ...await _cookieArgs(url),
-      url,
-    ]);
+    final cookieArgs = await _cookieArgs(url);
+    final isTikTok = UrlClassifier.isTiktok(url);
+    // TikTok’s JS/WAF challenge fails intermittently; retry a few times.
+    final attempts = isTikTok ? 3 : 1;
+    ProcessResult? lastResult;
 
-    if (result.exitCode != 0) {
-      throw YtdlpException(
-        _friendlyAuthMessage(_stderrMessage(result)),
-        exitCode: result.exitCode,
-      );
+    for (var attempt = 1; attempt <= attempts; attempt++) {
+      final args = <String>[
+        '--no-playlist',
+        '--dump-single-json',
+        '--skip-download',
+        '--no-warnings',
+        // Prefer cookies on first tries; last TikTok attempt drops them when
+        // session cookies can break anonymous extraction (yt-dlp #16199).
+        if (!(isTikTok && attempt == attempts && cookieArgs.isNotEmpty))
+          ...cookieArgs,
+        url,
+      ];
+
+      final result = await _runYtdlp(binaries.ytdlpPath, args);
+      lastResult = result;
+      if (result.exitCode == 0) {
+        final stdout = _decodeOutput(result.stdout).trim();
+        if (stdout.isEmpty) {
+          throw YtdlpException('yt-dlp returned no metadata for this URL.');
+        }
+        final decoded = jsonDecode(stdout);
+        if (decoded is! Map) {
+          throw YtdlpException('yt-dlp returned unexpected metadata.');
+        }
+        return YtdlpVideoInfo.fromJson(decoded.cast<String, Object?>());
+      }
+
+      final err = _stderrMessage(result);
+      if (!isTikTok || attempt == attempts || !_isTransientTikTokError(err)) {
+        break;
+      }
+      await Future<void>.delayed(Duration(milliseconds: 400 * attempt));
     }
 
-    final stdout = _decodeOutput(result.stdout).trim();
-    if (stdout.isEmpty) {
-      throw YtdlpException('yt-dlp returned no metadata for this URL.');
-    }
-
-    final decoded = jsonDecode(stdout);
-    if (decoded is! Map) {
-      throw YtdlpException('yt-dlp returned unexpected metadata.');
-    }
-
-    return YtdlpVideoInfo.fromJson(decoded.cast<String, Object?>());
+    final detail = _stderrMessage(lastResult!);
+    throw YtdlpException(
+      '${_friendlyAuthMessage(detail)}\n\n(yt-dlp: ${binaries.ytdlpPath})',
+      exitCode: lastResult.exitCode,
+    );
   }
 
   @override
@@ -122,10 +153,14 @@ class YtdlpClient implements YoutubeMetadataClient {
   }
 
   Future<List<String>> _cookieArgs(String url) {
-    return resolveYtdlpFacebookCookieArgs(
-      settings: facebookCookieArgs,
-      session: _facebookSession,
+    return resolveYtdlpSiteCookieArgs(
       url: url,
+      facebook: facebookCookieArgs,
+      facebookSession: _facebookSession,
+      instagram: instagramCookieArgs,
+      instagramSession: _instagramSession,
+      tiktok: tiktokCookieArgs,
+      tiktokSession: _tiktokSession,
     );
   }
 
@@ -153,10 +188,23 @@ class YtdlpClient implements YoutubeMetadataClient {
         lower.contains('private') ||
         lower.contains('unavailable')) {
       return '$message\n\n'
-          'If this is a private or friends-only video, open Settings → '
-          'Facebook and log in (or set cookies.txt / import from browser).';
+          'If this is a private video, open Settings → Facebook or Instagram '
+          'and log in (or set cookies.txt / import from browser).';
     }
     return message;
+  }
+
+  static bool _isTransientTikTokError(String message) {
+    final lower = message.toLowerCase();
+    return lower.contains('universal data') ||
+        lower.contains('rehydration') ||
+        lower.contains('webpage video data') ||
+        lower.contains('js challenge') ||
+        lower.contains('tls') ||
+        lower.contains('ssl') ||
+        lower.contains('curl: (35)') ||
+        lower.contains('timed out') ||
+        lower.contains('timeout');
   }
 
   static String _decodeOutput(Object? output) {

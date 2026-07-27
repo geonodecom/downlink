@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import '../facebook/facebook_session.dart';
+import '../instagram/instagram_session.dart';
+import '../tiktok/tiktok_session.dart';
 import 'explode_youtube_client.dart';
 import 'ytdlp_client.dart';
 import 'ytdlp_models.dart';
@@ -20,6 +22,10 @@ YoutubeMetadataClient createYoutubeMetadataClient({
   String ffmpegOverride = '',
   FacebookCookieArgs facebookCookieArgs = const FacebookCookieArgs(),
   FacebookSession? facebookSession,
+  InstagramCookieArgs instagramCookieArgs = const InstagramCookieArgs(),
+  InstagramSession? instagramSession,
+  TikTokCookieArgs tiktokCookieArgs = const TikTokCookieArgs(),
+  TikTokSession? tiktokSession,
 }) {
   if (Platform.isAndroid) {
     return ExplodeYoutubeClient();
@@ -29,5 +35,9 @@ YoutubeMetadataClient createYoutubeMetadataClient({
     ffmpegOverride: ffmpegOverride,
     facebookCookieArgs: facebookCookieArgs,
     facebookSession: facebookSession,
+    instagramCookieArgs: instagramCookieArgs,
+    instagramSession: instagramSession,
+    tiktokCookieArgs: tiktokCookieArgs,
+    tiktokSession: tiktokSession,
   );
 }
