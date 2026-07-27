@@ -4,6 +4,7 @@ enum DownloadUrlKind {
   youtubePlaylist,
   facebook,
   instagram,
+  tiktok,
 }
 
 /// Classifies download URLs for routing to direct HTTP or extractors.
@@ -38,6 +39,14 @@ class UrlClassifier {
     'www.instagr.am',
   };
 
+  static const _tiktokHosts = {
+    'tiktok.com',
+    'www.tiktok.com',
+    'm.tiktok.com',
+    'vm.tiktok.com',
+    'vt.tiktok.com',
+  };
+
   /// Trims and, for bare known hosts, prepends `https://`.
   static String normalizeInputUrl(String raw) {
     var text = raw.trim();
@@ -56,7 +65,9 @@ class UrlClassifier {
           hostCandidate == 'fb.com' ||
           _instagramHosts.contains(hostCandidate) ||
           hostCandidate.endsWith('.instagram.com') ||
-          hostCandidate == 'instagr.am') {
+          hostCandidate == 'instagr.am' ||
+          _tiktokHosts.contains(hostCandidate) ||
+          hostCandidate.endsWith('.tiktok.com')) {
         text = 'https://$text';
       }
     }
@@ -78,6 +89,10 @@ class UrlClassifier {
 
     if (_isInstagramHost(host)) {
       return DownloadUrlKind.instagram;
+    }
+
+    if (_isTiktokHost(host) && _looksLikeTiktokVideoUrl(normalized)) {
+      return DownloadUrlKind.tiktok;
     }
 
     if (!_isYoutubeHost(host)) {
@@ -106,6 +121,8 @@ class UrlClassifier {
 
   static bool isInstagram(String url) =>
       classify(url) == DownloadUrlKind.instagram;
+
+  static bool isTiktok(String url) => classify(url) == DownloadUrlKind.tiktok;
 
   /// Extracts an 11-character YouTube video id when present.
   static String? extractYoutubeVideoId(String url) {
@@ -241,6 +258,75 @@ class UrlClassifier {
       caseSensitive: false,
     ).firstMatch(Uri.tryParse(normalized)?.path ?? '');
     return match?.group(1);
+  }
+
+  /// Stable https TikTok video URL when id (and optional @user) are known.
+  static String normalizeTiktokUrl(String url) {
+    final normalized = normalizeInputUrl(url);
+    final uri = Uri.tryParse(normalized);
+    if (uri == null || !_isTiktokHost(uri.host.toLowerCase())) {
+      return normalized;
+    }
+
+    final host = uri.host.toLowerCase();
+    final id = extractTiktokVideoId(normalized);
+    if (id == null || id.isEmpty) {
+      return uri.replace(scheme: 'https').toString();
+    }
+
+    // Short links: keep vm/vt host so yt-dlp/Android can follow redirects.
+    if (host == 'vm.tiktok.com' || host == 'vt.tiktok.com') {
+      final path = uri.path.startsWith('/') ? uri.path : '/$id';
+      return uri.replace(scheme: 'https', host: host, path: path).toString();
+    }
+
+    final path = uri.path;
+    final userVideo = RegExp(
+      r'/@([^/]+)/video/(\d+)',
+      caseSensitive: false,
+    ).firstMatch(path);
+    if (userVideo != null) {
+      return 'https://www.tiktok.com/@${userVideo.group(1)}/video/${userVideo.group(2)}';
+    }
+
+    final bareVideo = RegExp(r'/video/(\d+)', caseSensitive: false).firstMatch(path);
+    if (bareVideo != null) {
+      return 'https://www.tiktok.com/video/${bareVideo.group(1)}';
+    }
+
+    return 'https://www.tiktok.com/video/$id';
+  }
+
+  /// Numeric video id when present in URL path or short-link segment.
+  static String? extractTiktokVideoId(String url) {
+    final normalized = normalizeInputUrl(url);
+    final uri = Uri.tryParse(normalized);
+    if (uri == null || !_isTiktokHost(uri.host.toLowerCase())) return null;
+
+    final host = uri.host.toLowerCase();
+    final path = uri.path;
+
+    final userVideo = RegExp(r'/video/(\d+)', caseSensitive: false).firstMatch(path);
+    if (userVideo != null) return userVideo.group(1);
+
+    if (host == 'vm.tiktok.com' || host == 'vt.tiktok.com') {
+      final segments = uri.pathSegments.where((s) => s.isNotEmpty).toList();
+      if (segments.isNotEmpty) {
+        final seg = segments.first;
+        if (RegExp(r'^\d+$').hasMatch(seg)) return seg;
+        return seg;
+      }
+    }
+
+    return null;
+  }
+
+  static bool _looksLikeTiktokVideoUrl(String url) {
+    return extractTiktokVideoId(url) != null;
+  }
+
+  static bool _isTiktokHost(String host) {
+    return _tiktokHosts.contains(host) || host.endsWith('.tiktok.com');
   }
 
   static bool _isYoutubeHost(String host) {

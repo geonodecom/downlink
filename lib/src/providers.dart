@@ -13,6 +13,7 @@ import 'engine/ytdlp_download_engine.dart';
 import 'extension/download_capture.dart';
 import 'facebook/facebook_session.dart';
 import 'instagram/instagram_session.dart';
+import 'tiktok/tiktok_session.dart';
 import 'services/diagnostics.dart';
 import 'services/download_service.dart';
 import 'ytdlp/youtube_metadata_client.dart';
@@ -86,10 +87,15 @@ final instagramSessionProvider = Provider<InstagramSession>((ref) {
   return InstagramSession();
 });
 
+final tiktokSessionProvider = Provider<TikTokSession>((ref) {
+  return TikTokSession();
+});
+
 final downloadEngineProvider = Provider<DownloadEngine>((ref) {
   final diagnostics = ref.watch(diagnosticsLogProvider);
   final facebookSession = ref.watch(facebookSessionProvider);
   final instagramSession = ref.watch(instagramSessionProvider);
+  final tiktokSession = ref.watch(tiktokSessionProvider);
   final repository = ref.watch(downloadRepositoryProvider);
   // Read cookie settings on demand so saving Settings does not recreate the
   // engine and drop in-flight yt-dlp jobs.
@@ -109,6 +115,14 @@ final downloadEngineProvider = Provider<DownloadEngine>((ref) {
     );
   }
 
+  Future<TikTokCookieArgs> tiktokCookieArgs() async {
+    final settings = await repository.getSettings();
+    return TikTokCookieArgs(
+      cookiesPath: settings.tiktokCookiesPath,
+      fromBrowser: settings.tiktokCookiesFromBrowser,
+    );
+  }
+
   final base = Platform.isAndroid
       ? AndroidDownloadEngine()
       : Aria2DownloadEngine(diagnostics: diagnostics);
@@ -119,12 +133,15 @@ final downloadEngineProvider = Provider<DownloadEngine>((ref) {
           facebookSession: facebookSession,
           instagramCookieArgsProvider: instagramCookieArgs,
           instagramSession: instagramSession,
+          tiktokCookieArgsProvider: tiktokCookieArgs,
+          tiktokSession: tiktokSession,
         );
   return CompositeDownloadEngine(
     baseEngine: base,
     youtubeEngine: youtube,
     facebookCookieHeader: facebookSession.cookieHeader,
     instagramCookieHeader: instagramSession.cookieHeader,
+    tiktokCookieHeader: tiktokSession.cookieHeader,
   );
 });
 
@@ -146,6 +163,11 @@ final ytdlpClientProvider = Provider<YoutubeMetadataClient>((ref) {
       fromBrowser: settings?.instagramCookiesFromBrowser ?? '',
     ),
     instagramSession: ref.watch(instagramSessionProvider),
+    tiktokCookieArgs: TikTokCookieArgs(
+      cookiesPath: settings?.tiktokCookiesPath ?? '',
+      fromBrowser: settings?.tiktokCookiesFromBrowser ?? '',
+    ),
+    tiktokSession: ref.watch(tiktokSessionProvider),
   );
 });
 

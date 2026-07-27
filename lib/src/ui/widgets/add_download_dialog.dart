@@ -4,6 +4,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
 
 import '../../data/download_repository.dart';
 import '../../extension/download_capture.dart';
@@ -16,6 +17,10 @@ import '../../instagram/instagram_session.dart';
 import '../../providers.dart';
 import '../../services/download_service.dart';
 import '../../services/url_classifier.dart';
+import '../../tiktok/tiktok_metadata_client.dart';
+import '../../tiktok/tiktok_models.dart';
+import '../../tiktok/tiktok_session.dart';
+import '../../tiktok/tiktok_webview_metadata.dart';
 import '../../ytdlp/youtube_metadata_client.dart';
 import '../../ytdlp/ytdlp_client.dart';
 import '../../ytdlp/ytdlp_models.dart';
@@ -104,8 +109,13 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
 
   bool get _isInstagramFlow => _urlKind == DownloadUrlKind.instagram;
 
+  bool get _isTikTokFlow => _urlKind == DownloadUrlKind.tiktok;
+
   bool get _isExtractorFlow =>
-      _isYoutubeFlow || _isFacebookFlow || _isInstagramFlow;
+      _isYoutubeFlow ||
+      _isFacebookFlow ||
+      _isInstagramFlow ||
+      _isTikTokFlow;
 
   @override
   Widget build(BuildContext context) {
@@ -128,7 +138,7 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
                 decoration: const InputDecoration(
                   labelText: 'URL',
                   hintText:
-                      'https://example.com/file.iso, YouTube, Facebook, or Instagram',
+                      'https://example.com/file.iso, YouTube, Facebook, Instagram, or TikTok',
                 ),
               ),
               if (widget.capture != null) ...[
@@ -206,6 +216,22 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
                             : 'Public posts/reels work without cookies when yt-dlp allows it. '
                                 'Private need cookies.txt or browser import '
                                 'in Settings → Instagram.',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ],
+                    if (_isTikTokFlow) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        Platform.isAndroid
+                            ? 'Public TikTok videos usually work without login. '
+                                'Private need TikTok login in Settings. '
+                                'If extraction fails with "universal data", '
+                                'update yt-dlp to nightly.'
+                            : 'Public videos work without cookies when yt-dlp allows it. '
+                                'Private need cookies.txt or browser import '
+                                'in Settings → TikTok. '
+                                'If you see "universal data for rehydration", '
+                                'run yt-dlp --update-to nightly and restart.',
                         style: const TextStyle(fontSize: 12),
                       ),
                     ],
@@ -287,6 +313,7 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
                     DownloadUrlKind.youtubePlaylist => 'Queue playlist',
                     DownloadUrlKind.facebook => 'Choose format',
                     DownloadUrlKind.instagram => 'Choose format',
+                    DownloadUrlKind.tiktok => 'Choose format',
                     DownloadUrlKind.direct => 'Add',
                   },
                 ),
@@ -306,7 +333,7 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
       setState(
         () => _error =
-            'Geonode supports HTTP, HTTPS, YouTube, Facebook, and Instagram URLs.',
+            'Geonode supports HTTP, HTTPS, YouTube, Facebook, Instagram, and TikTok URLs.',
       );
       return;
     }
@@ -328,6 +355,10 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
       await _submitInstagram(UrlClassifier.normalizeInstagramUrl(url));
       return;
     }
+    if (kind == DownloadUrlKind.tiktok) {
+      await _submitTikTok(UrlClassifier.normalizeTiktokUrl(url));
+      return;
+    }
 
     await _submitDirect(url);
   }
@@ -343,6 +374,10 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
     if (_isInstagramFlow) {
       return 'Instagram posts/reels save to Downloads. '
           'Private videos need Instagram login in Settings.';
+    }
+    if (_isTikTokFlow) {
+      return 'TikTok videos save to Downloads. '
+          'Private videos need TikTok login in Settings.';
     }
     return 'Files are saved to the system Downloads folder.';
   }
@@ -362,6 +397,11 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
         fromBrowser: settings.instagramCookiesFromBrowser,
       ),
       instagramSession: ref.read(instagramSessionProvider),
+      tiktokCookieArgs: TikTokCookieArgs(
+        cookiesPath: settings.tiktokCookiesPath,
+        fromBrowser: settings.tiktokCookiesFromBrowser,
+      ),
+      tiktokSession: ref.read(tiktokSessionProvider),
     );
   }
 
@@ -926,6 +966,203 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
     return message;
   }
 
+  Future<void> _submitTikTok(String url) async {
+    setState(() {
+      _error = null;
+      _submitting = true;
+    });
+
+    final settings = await ref.read(downloadRepositoryProvider).getSettings();
+    late final YtdlpVideoInfo info;
+    late final Map<String, String> progressiveUrls;
+    var cdnCookieHeader = '';
+
+    if (Platform.isAndroid) {
+      final cookieHeader =
+          await ref.read(tiktokSessionProvider).cookieHeader();
+      final client = TikTokMetadataClient(
+        cookieHeader: cookieHeader,
+        webViewHtmlFetcher: (pageUrl) => fetchTiktokPageHtmlViaWebView(
+          context,
+          pageUrl: pageUrl,
+          cookieHeader: cookieHeader,
+        ),
+      );
+      try {
+        final result = await client.fetchInfo(url);
+        info = result.info;
+        progressiveUrls = result.progressiveUrls;
+        cdnCookieHeader = result.cdnCookieHeader;
+      } on YtdlpException catch (error) {
+        if (mounted) {
+          setState(() {
+            _error = error.message;
+            _submitting = false;
+          });
+        }
+        return;
+      } catch (error) {
+        if (mounted) {
+          setState(() {
+            _error = error.toString();
+            _submitting = false;
+          });
+        }
+        return;
+      } finally {
+        client.close();
+      }
+    } else {
+      final client = await _youtubeClient();
+      if (!await _ensureYoutubeTools(client)) return;
+      progressiveUrls = const {};
+      try {
+        info = await client.fetchInfo(url);
+      } on YtdlpException catch (error) {
+        if (mounted) {
+          setState(() {
+            _error = _friendlyTikTokDesktopError(error.message);
+            _submitting = false;
+          });
+        }
+        return;
+      } on FormatException catch (error) {
+        if (mounted) {
+          setState(() {
+            _error =
+                'Could not read yt-dlp output for this TikTok video '
+                '(encoding error). Try again, or update yt-dlp. ($error)';
+            _submitting = false;
+          });
+        }
+        return;
+      } catch (error) {
+        if (mounted) {
+          setState(() {
+            _error = error.toString();
+            _submitting = false;
+          });
+        }
+        return;
+      }
+    }
+
+    if (!mounted) return;
+    setState(() => _submitting = false);
+
+    final preset = presetFromStorage(settings.youtubeFormatPreset);
+    final selection = await showYoutubeFormatDialog(
+      context,
+      info: info,
+      initialFormatId: info.defaultFormatId(preset),
+      dialogTitle: 'Choose TikTok format',
+    );
+    if (selection == null || !mounted) return;
+
+    setState(() {
+      _error = null;
+      _submitting = true;
+    });
+
+    try {
+      final directory = await resolveYtdlpDownloadDirectory(
+        Platform.isAndroid ? 'Downloads' : _directory.text.trim(),
+      );
+      final directUrl = progressiveUrls[selection.formatId] ?? '';
+      if (Platform.isAndroid && directUrl.isEmpty) {
+        throw StateError('Selected TikTok format has no progressive URL.');
+      }
+      final videoId = UrlClassifier.extractTiktokVideoId(url) ?? info.id;
+      final options = TikTokDownloadOptions(
+        formatId: selection.formatId,
+        title: selection.title,
+        ext: selection.ext,
+        directUrl: directUrl,
+        cookieHeader: cdnCookieHeader,
+      );
+      final fileName = _tiktokFileName(
+        selection.fileName,
+        videoId: videoId,
+        ext: selection.ext,
+      );
+      await ref.read(downloadServiceProvider).addDownload(
+            NewDownload(
+              url: url,
+              directory: directory,
+              fileName: fileName,
+              split: 1,
+              startImmediately: _startImmediately,
+              metadata: DownloadMetadata(
+                fileName: fileName,
+                totalLength: 0,
+              ),
+              headers: widget.capture?.headers ?? const {},
+              source: _tiktokSource(),
+              options: options.toJson(),
+            ),
+          );
+      if (mounted) Navigator.of(context).pop();
+    } catch (err) {
+      if (mounted) {
+        setState(() {
+          _error = err.toString();
+          _submitting = false;
+        });
+      }
+    }
+  }
+
+  String _tiktokFileName(
+    String preferred, {
+    required String videoId,
+    required String ext,
+  }) {
+    final cleanedExt = ext.startsWith('.') ? ext.substring(1) : ext;
+    final safeExt = cleanedExt.isEmpty ? 'mp4' : cleanedExt;
+    var base = preferred.trim();
+    // Strip any existing extension before rebuilding.
+    final existingExt = p.extension(base);
+    if (existingExt.isNotEmpty) {
+      base = p.basenameWithoutExtension(base);
+    }
+    if (base.isEmpty ||
+        base.toLowerCase() == 'tiktok' ||
+        base.toLowerCase() == 'video by tiktok' ||
+        (videoId.isNotEmpty && base == videoId)) {
+      base = videoId.isNotEmpty ? 'tiktok_$videoId' : 'tiktok_video';
+    } else if (videoId.isNotEmpty && !base.contains(videoId)) {
+      base = '${base}_$videoId';
+    }
+    return '$base.$safeExt';
+  }
+
+  String _friendlyTikTokDesktopError(String message) {
+    final lower = message.toLowerCase();
+    if (lower.contains('universal data') ||
+        lower.contains('rehydration') ||
+        lower.contains('webpage video data') ||
+        lower.contains('js challenge') ||
+        lower.contains('tls') ||
+        lower.contains('ssl')) {
+      return 'TikTok’s page challenge blocked this attempt (common and often temporary). '
+          'Tap Choose format again. Use a recent nightly yt-dlp '
+          '(Settings → yt-dlp override, or run tool/windows/fetch_deps.ps1). '
+          'If it keeps failing, open the video in a browser, export cookies.txt, '
+          'and set it in Settings → TikTok — or clear TikTok cookie import if set.';
+    }
+    if (lower.contains('login') ||
+        lower.contains('cookie') ||
+        lower.contains('private') ||
+        lower.contains('waf') ||
+        lower.contains('unavailable')) {
+      return 'Could not extract this TikTok video. '
+          'For private videos or TikTok security checks, open Settings → TikTok '
+          'and set cookies.txt or import from browser, and keep yt-dlp updated '
+          '(prefer nightly). Details: $message';
+    }
+    return message;
+  }
+
   Future<void> _submitDirect(String url) async {
     final directory = Platform.isAndroid
         ? (_directory.text.trim().isEmpty ? 'Downloads' : _directory.text.trim())
@@ -980,6 +1217,13 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
     return widget.capture!.source == 'browser_extension'
         ? 'instagram_extension'
         : 'instagram_share';
+  }
+
+  String _tiktokSource() {
+    if (widget.capture == null) return 'tiktok';
+    return widget.capture!.source == 'browser_extension'
+        ? 'tiktok_extension'
+        : 'tiktok_share';
   }
 
   String _captureLabel(DownloadCapture capture) {

@@ -11,6 +11,8 @@ import '../facebook/facebook_models.dart';
 import '../facebook/facebook_session.dart';
 import '../instagram/instagram_models.dart';
 import '../instagram/instagram_session.dart';
+import '../tiktok/tiktok_models.dart';
+import '../tiktok/tiktok_session.dart';
 import '../ytdlp/ytdlp_executable.dart';
 import '../ytdlp/ytdlp_models.dart';
 import '../ytdlp/ytdlp_progress.dart';
@@ -24,14 +26,16 @@ class _YtdlpJob {
     required this.fileName,
     required this.options,
     required this.outputPath,
+    required this.outputTemplate,
   });
 
   final String gid;
   final String url;
   final String directory;
-  final String fileName;
+  String fileName;
   final YoutubeDownloadOptions options;
-  final String outputPath;
+  String outputPath;
+  final String outputTemplate;
   Process? process;
   var status = 'waiting';
   var downloadedBytes = 0;
@@ -52,12 +56,17 @@ class YtdlpDownloadEngine implements DownloadEngine {
     this.instagramCookieArgs = const InstagramCookieArgs(),
     Future<InstagramCookieArgs> Function()? instagramCookieArgsProvider,
     InstagramSession? instagramSession,
+    this.tiktokCookieArgs = const TikTokCookieArgs(),
+    Future<TikTokCookieArgs> Function()? tiktokCookieArgsProvider,
+    TikTokSession? tiktokSession,
   }) : _resolver = resolver ?? YtdlpExecutableResolver(),
        _publishFile = publishFile ?? _defaultPublishFile,
        _facebookCookieArgsProvider = facebookCookieArgsProvider,
        _facebookSession = facebookSession ?? FacebookSession(),
        _instagramCookieArgsProvider = instagramCookieArgsProvider,
-       _instagramSession = instagramSession ?? InstagramSession();
+       _instagramSession = instagramSession ?? InstagramSession(),
+       _tiktokCookieArgsProvider = tiktokCookieArgsProvider,
+       _tiktokSession = tiktokSession ?? TikTokSession();
 
   final YtdlpExecutableResolver _resolver;
   final Future<String?> Function(String sourcePath, String displayName)
@@ -68,6 +77,9 @@ class YtdlpDownloadEngine implements DownloadEngine {
   final InstagramCookieArgs instagramCookieArgs;
   final Future<InstagramCookieArgs> Function()? _instagramCookieArgsProvider;
   final InstagramSession _instagramSession;
+  final TikTokCookieArgs tiktokCookieArgs;
+  final Future<TikTokCookieArgs> Function()? _tiktokCookieArgsProvider;
+  final TikTokSession _tiktokSession;
   final Map<String, _YtdlpJob> _jobs = {};
   var _started = false;
   String _downloadDirectory = '';
@@ -135,13 +147,19 @@ class YtdlpDownloadEngine implements DownloadEngine {
 
     final gid = 'ytdlp:${const Uuid().v4()}';
     final targetDirectory = directory.isNotEmpty ? directory : _downloadDirectory;
-    final resolvedName = fileName?.trim().isNotEmpty == true
-        ? fileName!.trim()
-        : options.sanitizedFileName;
+    final resolvedName = _ensureMediaFileName(
+      fileName?.trim().isNotEmpty == true
+          ? fileName!.trim()
+          : options.sanitizedFileName,
+      fallbackExt: options.ext,
+    );
     final outputPath = await _uniqueOutputPath(
       p.join(targetDirectory, resolvedName),
     );
     final uniqueName = p.basename(outputPath);
+    // Use %(ext)s so yt-dlp always writes a real media extension (TikTok/etc).
+    final stem = p.basenameWithoutExtension(uniqueName);
+    final outputTemplate = p.join(targetDirectory, '$stem.%(ext)s');
 
     final job = _YtdlpJob(
       gid: gid,
@@ -150,6 +168,7 @@ class YtdlpDownloadEngine implements DownloadEngine {
       fileName: uniqueName,
       options: options,
       outputPath: outputPath,
+      outputTemplate: outputTemplate,
     );
     _jobs[gid] = job;
     unawaited(_runJob(job));
@@ -274,6 +293,10 @@ class YtdlpDownloadEngine implements DownloadEngine {
       final instagramSettings = instagramArgsProvider != null
           ? await instagramArgsProvider()
           : instagramCookieArgs;
+      final tiktokArgsProvider = _tiktokCookieArgsProvider;
+      final tiktokSettings = tiktokArgsProvider != null
+          ? await tiktokArgsProvider()
+          : tiktokCookieArgs;
       final args = [
         '--no-playlist',
         '--continue',
@@ -285,14 +308,18 @@ class YtdlpDownloadEngine implements DownloadEngine {
         p.dirname(binaries.ffmpegPath),
         '--format',
         job.options.formatId,
+        '--merge-output-format',
+        'mp4',
         '-o',
-        job.outputPath,
+        job.outputTemplate,
         ...await resolveYtdlpSiteCookieArgs(
           url: job.url,
           facebook: facebookSettings,
           facebookSession: _facebookSession,
           instagram: instagramSettings,
           instagramSession: _instagramSession,
+          tiktok: tiktokSettings,
+          tiktokSession: _tiktokSession,
         ),
         job.url,
       ];
@@ -363,20 +390,57 @@ class YtdlpDownloadEngine implements DownloadEngine {
     return p.join(dir, '$base-${const Uuid().v4()}$ext');
   }
 
-  Future<void> _finalizeJob(_YtdlpJob job) async {
-    final file = File(job.outputPath);
-    if (!await file.exists()) return;
+  String _ensureMediaFileName(String name, {required String fallbackExt}) {
+    final cleaned = name.trim();
+    final safeExt = fallbackExt.trim().isEmpty ? 'mp4' : fallbackExt.trim();
+    final withoutDot = safeExt.startsWith('.') ? safeExt.substring(1) : safeExt;
+    if (cleaned.isEmpty) return 'video.$withoutDot';
+    final existing = p.extension(cleaned);
+    if (existing.isNotEmpty && existing != '.') return cleaned;
+    final stem = cleaned.endsWith('.')
+        ? cleaned.substring(0, cleaned.length - 1)
+        : cleaned;
+    return '$stem.$withoutDot';
+  }
 
-    job.totalBytes = await file.length();
+  Future<void> _finalizeJob(_YtdlpJob job) async {
+    final resolved = await _resolveOutputFile(job);
+    if (resolved == null) return;
+
+    job.outputPath = resolved.path;
+    job.fileName = p.basename(resolved.path);
+    job.totalBytes = await resolved.length();
     job.downloadedBytes = job.totalBytes;
 
     final published = await _publishFile(job.outputPath, job.fileName);
     if (published != null && published.isNotEmpty) {
       job.contentUri = published;
       try {
-        await file.delete();
+        await resolved.delete();
       } catch (_) {}
     }
+  }
+
+  Future<File?> _resolveOutputFile(_YtdlpJob job) async {
+    final expected = File(job.outputPath);
+    if (await expected.exists()) return expected;
+
+    final stem = p.basenameWithoutExtension(job.outputPath);
+    final dir = Directory(job.directory);
+    if (!await dir.exists()) return null;
+
+    File? best;
+    await for (final entity in dir.list()) {
+      if (entity is! File) continue;
+      final name = p.basename(entity.path);
+      if (name.endsWith('.part') || name.endsWith('.ytdl')) continue;
+      if (p.basenameWithoutExtension(name) != stem) continue;
+      best ??= entity;
+      if (p.extension(name).toLowerCase() == '.mp4') {
+        return entity;
+      }
+    }
+    return best;
   }
 
   Future<void> _stopJob(_YtdlpJob job, {bool markRemoved = false}) async {
@@ -445,6 +509,14 @@ class YtdlpDownloadEngine implements DownloadEngine {
         formatId: instagram.formatId,
         title: instagram.title,
         ext: instagram.ext,
+      );
+    }
+    if (kind == TikTokDownloadOptions.kind) {
+      final tiktok = TikTokDownloadOptions.fromJson(optionsJson);
+      return YoutubeDownloadOptions(
+        formatId: tiktok.formatId,
+        title: tiktok.title,
+        ext: tiktok.ext,
       );
     }
     return null;

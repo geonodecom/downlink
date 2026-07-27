@@ -73,8 +73,13 @@ class Aria2Status {
 
   String? get fileName {
     if (files.isEmpty || files.first.path.isEmpty) return null;
-    final parts = files.first.path.split('/');
-    return parts.isEmpty ? files.first.path : parts.last;
+    final path = files.first.path.trim();
+    if (path.isEmpty) return null;
+    // Handle both Windows (\) and POSIX (/) separators from aria2 / yt-dlp.
+    final normalized = path.replaceAll('\\', '/');
+    final parts = normalized.split('/');
+    final base = parts.isEmpty ? path : parts.last;
+    return base.isEmpty ? null : base;
   }
 
   String? get sourceUrl {

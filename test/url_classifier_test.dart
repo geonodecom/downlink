@@ -225,5 +225,47 @@ void main() {
         'ABC123xyz_',
       );
     });
+
+    test('detects tiktok hosts and video paths', () {
+      expect(
+        UrlClassifier.classify(
+          'https://www.tiktok.com/@user/video/7123456789012345678',
+        ),
+        DownloadUrlKind.tiktok,
+      );
+      expect(
+        UrlClassifier.classify('https://vm.tiktok.com/7123456789012345678/'),
+        DownloadUrlKind.tiktok,
+      );
+      expect(
+        UrlClassifier.classify('https://vm.tiktok.com/ZMeShortCode/'),
+        DownloadUrlKind.tiktok,
+      );
+      expect(
+        UrlClassifier.classify('https://www.tiktok.com/'),
+        DownloadUrlKind.direct,
+      );
+    });
+
+    test('normalizeTiktokUrl and extractTiktokVideoId', () {
+      expect(
+        UrlClassifier.normalizeTiktokUrl(
+          'https://m.tiktok.com/@demo/video/7123456789012345678?lang=en',
+        ),
+        'https://www.tiktok.com/@demo/video/7123456789012345678',
+      );
+      expect(
+        UrlClassifier.extractTiktokVideoId(
+          'https://www.tiktok.com/@demo/video/7123456789012345678',
+        ),
+        '7123456789012345678',
+      );
+      expect(
+        UrlClassifier.isTiktok(
+          'https://vm.tiktok.com/7123456789012345678/',
+        ),
+        isTrue,
+      );
+    });
   });
 }

@@ -17,8 +17,8 @@ targets. Desktop builds use system `aria2c`. Android uses a native foreground
 service with segmented HTTP Range downloads and publishes completed files to the
 system Downloads collection via MediaStore.
 
-The app focuses on direct HTTP/HTTPS file downloads, YouTube, Facebook, and
-Instagram reel/video extraction (including private access via session cookies),
+The app focuses on direct HTTP/HTTPS file downloads, YouTube, Facebook, Instagram,
+and TikTok single-video extraction (including private access via session cookies),
 queueing, resume, and useful download details. Torrent downloads are not
 implemented yet; see [Roadmap](#roadmap).
 
@@ -40,6 +40,8 @@ implemented yet; see [Roadmap](#roadmap).
 - [x] Private / friends-only Facebook videos via in-app session login (Android WebView) or desktop cookies.txt / browser cookie import
 - [x] Instagram reels / videos download (desktop: yt-dlp; Android: progressive CDN extraction + HTTP) — photo posts and carousels are not supported
 - [x] Private Instagram reels/videos via in-app session login (Android WebView) or desktop cookies.txt / browser cookie import
+- [x] TikTok single-video download (desktop: yt-dlp; Android: progressive CDN extraction + HTTP) — slideshow/photo posts, live, and playlists are not supported
+- [x] Private TikTok videos via in-app session login (Android WebView) or desktop cookies.txt / browser cookie import
 
 ## Roadmap
 
@@ -122,8 +124,17 @@ reels and videos follow the same split: desktop uses yt-dlp; Android extracts
 progressive CDN MP4s and downloads over HTTP. Photo posts and image carousels
 are not supported. Private Instagram reels/videos use Settings → Instagram
 (Android WebView login, or desktop cookies.txt / `--cookies-from-browser`).
+TikTok single-video links (`/@user/video/…`, `vm.tiktok.com`, etc.) follow
+the same split: desktop yt-dlp; Android progressive CDN download with Referer
+and session cookies when logged in. Slideshow/photo posts, live streams, and
+playlists are not supported. Private TikTok videos use Settings → TikTok.
 On desktop, yt-dlp can also use a Netscape cookies.txt file or
-`--cookies-from-browser` for Facebook and Instagram (separately configured).
+`--cookies-from-browser` for Facebook, Instagram, and TikTok (separately configured).
+Keep desktop **yt-dlp** on the **nightly** channel for TikTok (`yt-dlp --update-to nightly`,
+or re-run `tool/windows/fetch_deps.ps1` / `make fetch-deps`). TikTok’s JS/WAF
+challenges change often; stable releases lag those fixes. The error
+“Unable to extract universal data for rehydration” almost always means the
+bundled/PATH yt-dlp is too old for current TikTok.
 APK size grows substantially
 because static ffmpeg is packaged per ABI. YouTube downloading may conflict
 with Play Store policy; sideload/dev builds are the safest target for now.

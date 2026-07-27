@@ -106,3 +106,11 @@ install(DIRECTORY "${PROJECT_BUILD_DIR}/${FLUTTER_ASSET_DIR_NAME}"
 install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   CONFIGURATIONS Profile;Release
   COMPONENT Runtime)
+
+# Bundled download tools (aria2, yt-dlp, ffmpeg) next to the exe.
+set(GEONODE_DEPS_BIN_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../build/deps/windows-x64/bin")
+if(EXISTS "${GEONODE_DEPS_BIN_DIR}")
+  install(DIRECTORY "${GEONODE_DEPS_BIN_DIR}/"
+    DESTINATION "${CMAKE_INSTALL_PREFIX}/bin"
+    COMPONENT Runtime)
+endif()

@@ -1,8 +1,10 @@
 {
   "windows": {
     "yt_dlp": {
-      "url": "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe",
-      "filename": "yt-dlp.exe"
+      "url": "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp.exe",
+      "filename": "yt-dlp.exe",
+      "channel": "nightly",
+      "note": "TikTok JS/WAF fixes often land in nightly before stable."
     },
     "ffmpeg": {
       "url": "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip",
@@ -17,8 +19,10 @@
   },
   "linux": {
     "yt_dlp": {
-      "url": "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp",
-      "filename": "yt-dlp"
+      "url": "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp",
+      "filename": "yt-dlp",
+      "channel": "nightly",
+      "note": "TikTok JS/WAF fixes often land in nightly before stable."
     },
     "ffmpeg": {
       "url": "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz",

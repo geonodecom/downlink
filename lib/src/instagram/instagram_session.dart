@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../facebook/facebook_session.dart';
 import '../services/url_classifier.dart';
+import '../tiktok/tiktok_session.dart';
 import 'instagram_cookies.dart';
 
 /// Persists Instagram session cookies (encrypted via platform secure storage).
@@ -108,13 +109,15 @@ Future<List<String>> resolveYtdlpInstagramCookieArgs({
   return const [];
 }
 
-/// Resolves yt-dlp cookie CLI args for Facebook or Instagram URLs only.
+/// Resolves yt-dlp cookie CLI args for Facebook, Instagram, or TikTok URLs only.
 Future<List<String>> resolveYtdlpSiteCookieArgs({
   required String url,
   FacebookCookieArgs facebook = const FacebookCookieArgs(),
   InstagramCookieArgs instagram = const InstagramCookieArgs(),
+  TikTokCookieArgs tiktok = const TikTokCookieArgs(),
   FacebookSession? facebookSession,
   InstagramSession? instagramSession,
+  TikTokSession? tiktokSession,
 }) async {
   if (UrlClassifier.isFacebook(url)) {
     return resolveYtdlpFacebookCookieArgs(
@@ -127,6 +130,13 @@ Future<List<String>> resolveYtdlpSiteCookieArgs({
     return resolveYtdlpInstagramCookieArgs(
       settings: instagram,
       session: instagramSession,
+      url: url,
+    );
+  }
+  if (UrlClassifier.isTiktok(url)) {
+    return resolveYtdlpTiktokCookieArgs(
+      settings: tiktok,
+      session: tiktokSession,
       url: url,
     );
   }

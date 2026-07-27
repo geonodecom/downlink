@@ -421,6 +421,14 @@ class DownloadRepository {
           key: 'instagram_cookies_from_browser',
           value: settings.instagramCookiesFromBrowser,
         ),
+        AppSettingsCompanion.insert(
+          key: 'tiktok_cookies_path',
+          value: settings.tiktokCookiesPath,
+        ),
+        AppSettingsCompanion.insert(
+          key: 'tiktok_cookies_from_browser',
+          value: settings.tiktokCookiesFromBrowser,
+        ),
       ]);
     });
   }
@@ -443,6 +451,8 @@ class DownloadRepository {
         facebookCookiesFromBrowser: '',
         instagramCookiesPath: '',
         instagramCookiesFromBrowser: '',
+        tiktokCookiesPath: '',
+        tiktokCookiesFromBrowser: '',
       ),
     );
   }
@@ -471,6 +481,8 @@ class DownloadRepository {
       instagramCookiesPath: values['instagram_cookies_path'] ?? '',
       instagramCookiesFromBrowser:
           values['instagram_cookies_from_browser'] ?? '',
+      tiktokCookiesPath: values['tiktok_cookies_path'] ?? '',
+      tiktokCookiesFromBrowser: values['tiktok_cookies_from_browser'] ?? '',
     );
   }
 }

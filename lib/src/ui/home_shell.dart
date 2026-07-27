@@ -61,11 +61,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     );
 
     return Scaffold(
-      appBar: useRail
-          ? null
-          : AppBar(
-              title: Text(_destinations[section.index].$2),
-            ),
+      appBar: null,
       body: useRail
           ? Row(
               children: [
