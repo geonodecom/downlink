@@ -4,7 +4,7 @@
 
 <p align="center">
   <img
-    src="geonode-donwload-manager-windows.png"
+    src="geonode-download-manager-windows.png"
     alt="Geonode Download Manager on Windows showing the Downloads screen"
     width="720"
   />
