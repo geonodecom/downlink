@@ -80,6 +80,7 @@ class AndroidDownloadEngine implements DownloadEngine {
       'fileName': fileName,
       'headers': headers,
       'position': position,
+      'options': optionsJson ?? const <String, Object?>{},
     });
     if (gid == null || gid.isEmpty) {
       throw StateError('Android engine did not return a task id');

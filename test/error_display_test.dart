@@ -70,6 +70,17 @@ void main() {
         'File not found',
       );
     });
+    test('maps banned client tracker messages', () {
+      expect(
+        friendlyErrorSummary(
+          _fakeDownload(
+            error:
+                'Tracker returned failure reason: banned client',
+          ),
+        ),
+        contains('banned client'),
+      );
+    });
   });
 }
 
@@ -89,6 +100,7 @@ DownloadEntity _fakeDownload({
     totalLength: 0,
     completedLength: 0,
     downloadSpeed: 0,
+    uploadSpeed: 0,
     connections: 0,
     split: 16,
     pieceLength: 0,

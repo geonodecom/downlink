@@ -48,4 +48,8 @@ flutter {
 
 dependencies {
     implementation("androidx.core:core-ktx:1.16.0")
+    implementation("org.libtorrent4j:libtorrent4j:2.1.0-39")
+    implementation("org.libtorrent4j:libtorrent4j-android-arm64-v8a:2.1.0-39")
+    implementation("org.libtorrent4j:libtorrent4j-android-armeabi-v7a:2.1.0-39")
+    implementation("org.libtorrent4j:libtorrent4j-android-x86_64:2.1.0-39")
 }

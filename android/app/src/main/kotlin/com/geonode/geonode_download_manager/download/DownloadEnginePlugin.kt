@@ -81,6 +81,10 @@ class DownloadEnginePlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Eve
                 val headers = headersArg.entries.associate {
                     it.key.toString() to it.value.toString()
                 }
+                val optionsArg = call.argument<Map<*, *>>("options") ?: emptyMap<Any, Any>()
+                val options = optionsArg.entries.associate {
+                    it.key.toString() to it.value
+                }
                 requireService().addUri(
                     url = call.argument<String>("url") ?: error("url required"),
                     directory = call.argument<String>("directory") ?: "",
@@ -88,6 +92,7 @@ class DownloadEnginePlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Eve
                     fileName = call.argument<String>("fileName"),
                     headers = headers,
                     position = call.argument<Int>("position"),
+                    options = options,
                 )
             }
             "pause" -> {

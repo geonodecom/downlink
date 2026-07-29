@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import '../instagram/instagram_models.dart';
 import '../tiktok/tiktok_models.dart';
+import '../torrent/torrent_models.dart';
 import '../ytdlp/ytdlp_models.dart';
 
 class FacebookDownloadOptions {
@@ -77,5 +78,6 @@ bool isExtractorDownloadOptions(String? optionsJson) {
   return isYoutubeDownloadOptions(optionsJson) ||
       isFacebookDownloadOptions(optionsJson) ||
       isInstagramDownloadOptions(optionsJson) ||
-      isTikTokDownloadOptions(optionsJson);
+      isTikTokDownloadOptions(optionsJson) ||
+      isTorrentDownloadOptions(optionsJson);
 }

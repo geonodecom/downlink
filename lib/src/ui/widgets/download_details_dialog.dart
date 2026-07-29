@@ -13,6 +13,7 @@ import '../downloads_page.dart' show showDeleteDownloadDialog;
 import '../../utils/download_display.dart';
 import '../../utils/error_display.dart';
 import '../../utils/formatters.dart';
+import '../../torrent/torrent_models.dart';
 
 Future<void> showDownloadDetailsDialog(
   BuildContext context,
@@ -93,18 +94,30 @@ class _DownloadDetailsContent extends ConsumerWidget {
                     : download.directory,
               ),
               _DetailRow(label: 'File', value: path ?? ''),
-              _DetailRow(label: 'Status', value: statusLabel(download.status)),
+              _DetailRow(
+                label: 'Status',
+                value: downloadStatusLabel(download),
+              ),
               _DetailRow(label: 'GID', value: download.gid ?? ''),
               _DetailRow(label: 'Progress', value: progressSummary(download)),
               _DetailRow(
-                label: 'Speed',
-                value: formatSpeed(download.downloadSpeed),
+                label: 'Download speed',
+                value: formatSpeed(download.downloadSpeed).isEmpty
+                    ? '0 B/s'
+                    : formatSpeed(download.downloadSpeed),
               ),
+              if (download.uploadSpeed > 0 || isSeedingDownload(download))
+                _DetailRow(
+                  label: 'Upload speed',
+                  value: download.uploadSpeed > 0
+                      ? formatSpeed(download.uploadSpeed)
+                      : '0 B/s',
+                ),
               _DetailRow(
-                label: 'Connections',
-                value: download.connections > 0
-                    ? download.connections.toString()
-                    : '',
+                label: isTorrentDownloadOptions(download.optionsJson)
+                    ? 'Peers'
+                    : 'Connections',
+                value: download.connections.toString(),
               ),
               const SizedBox(height: 16),
               Text('Pieces', style: Theme.of(context).textTheme.titleMedium),

@@ -12,6 +12,7 @@ import '../engine/download_engine.dart';
 import '../facebook/facebook_models.dart';
 import '../instagram/instagram_models.dart';
 import '../tiktok/tiktok_models.dart';
+import '../torrent/torrent_models.dart';
 import '../ytdlp/ytdlp_models.dart';
 import 'diagnostics.dart';
 import 'download_probe.dart';
@@ -397,12 +398,16 @@ class DownloadService {
         kind == DownloadUrlKind.instagram ||
         kind == DownloadUrlKind.facebook ||
         kind == DownloadUrlKind.youtube ||
-        kind == DownloadUrlKind.youtubePlaylist;
+        kind == DownloadUrlKind.youtubePlaylist ||
+        kind == DownloadUrlKind.magnet ||
+        kind == DownloadUrlKind.torrent;
     if (!needsOptions) return;
     if (isExtractorDownloadOptions(entity.optionsJson)) return;
     throw StateError(
-      'This URL needs format selection before download. '
-      'Use Add Download → Choose format.',
+      kind == DownloadUrlKind.magnet || kind == DownloadUrlKind.torrent
+          ? 'This magnet/torrent needs options before download. Use Add Download.'
+          : 'This URL needs format selection before download. '
+              'Use Add Download → Choose format.',
     );
   }
 
@@ -411,7 +416,9 @@ class DownloadService {
     if (kind == YoutubeDownloadOptions.kind ||
         kind == FacebookDownloadOptions.kind ||
         kind == InstagramDownloadOptions.kind ||
-        kind == TikTokDownloadOptions.kind) {
+        kind == TikTokDownloadOptions.kind ||
+        kind == TorrentDownloadOptions.kindMagnet ||
+        kind == TorrentDownloadOptions.kindTorrent) {
       return false;
     }
     // Never probe extractor site pages as if they were direct files.

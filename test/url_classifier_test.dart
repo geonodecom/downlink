@@ -267,5 +267,31 @@ void main() {
         isTrue,
       );
     });
+
+    test('detects magnet links', () {
+      expect(
+        UrlClassifier.classify(
+          'magnet:?xt=urn:btih:0123456789ABCDEF0123456789ABCDEF01234567&dn=Example',
+        ),
+        DownloadUrlKind.magnet,
+      );
+      expect(
+        UrlClassifier.magnetDisplayName(
+          'magnet:?xt=urn:btih:0123456789ABCDEF0123456789ABCDEF01234567&dn=My+File',
+        ),
+        'My File',
+      );
+    });
+
+    test('detects torrent files and URLs', () {
+      expect(
+        UrlClassifier.classify(r'C:\Downloads\demo.torrent'),
+        DownloadUrlKind.torrent,
+      );
+      expect(
+        UrlClassifier.classify('https://example.com/files/demo.torrent'),
+        DownloadUrlKind.torrent,
+      );
+    });
   });
 }

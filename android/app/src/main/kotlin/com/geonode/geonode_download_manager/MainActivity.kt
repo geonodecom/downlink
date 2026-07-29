@@ -119,7 +119,11 @@ class MainActivity : FlutterActivity() {
             Intent.ACTION_VIEW -> intent.dataString
             else -> null
         }?.trim()
-        if (url != null && (url.startsWith("http://") || url.startsWith("https://"))) {
+        if (url != null &&
+            (url.startsWith("http://") ||
+                url.startsWith("https://") ||
+                url.startsWith("magnet:?"))
+        ) {
             pendingShareUrl = url
         }
     }

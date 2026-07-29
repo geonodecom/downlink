@@ -21,7 +21,8 @@ class DownloadsPage extends ConsumerWidget {
         data: (items) => items.isEmpty
             ? const _EmptyState()
             : ListView.separated(
-                padding: const EdgeInsets.all(16),
+                // Extra bottom space so the Add FAB never covers row actions.
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
                 itemBuilder: (context, index) => _DownloadTile(items[index]),
                 separatorBuilder: (_, _) => const SizedBox(height: 8),
                 itemCount: items.length,
@@ -62,7 +63,7 @@ class _DownloadTile extends ConsumerWidget {
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                   ),
-                  _StatusChip(status: download.status),
+                  _StatusChip(download: download),
                 ],
               ),
               const SizedBox(height: 10),
@@ -231,14 +232,15 @@ Future<bool?> showDeleteDownloadDialog(
 }
 
 class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.status});
+  const _StatusChip({required this.download});
 
-  final String status;
+  final DownloadEntity download;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final downloadStatus = DownloadStatus.values.byName(status);
+    final seeding = isSeedingDownload(download);
+    final downloadStatus = DownloadStatus.values.byName(download.status);
     final colors = switch (downloadStatus) {
       DownloadStatus.active => (
         background: colorScheme.primaryContainer,
@@ -262,9 +264,13 @@ class _StatusChip extends StatelessWidget {
       ),
     };
     return Chip(
-      label: Text(statusLabel(status)),
-      backgroundColor: colors.background,
-      labelStyle: TextStyle(color: colors.foreground),
+      label: Text(downloadStatusLabel(download)),
+      backgroundColor: seeding
+          ? colorScheme.secondaryContainer
+          : colors.background,
+      labelStyle: TextStyle(
+        color: seeding ? colorScheme.onSecondaryContainer : colors.foreground,
+      ),
       visualDensity: VisualDensity.compact,
     );
   }

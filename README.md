@@ -19,8 +19,7 @@ system Downloads collection via MediaStore.
 
 The app focuses on direct HTTP/HTTPS file downloads, YouTube, Facebook, Instagram,
 and TikTok single-video extraction (including private access via session cookies),
-queueing, resume, and useful download details. Torrent downloads are not
-implemented yet; see [Roadmap](#roadmap).
+magnet / `.torrent` downloads, queueing, resume, and useful download details.
 
 ## Features
 
@@ -33,7 +32,7 @@ implemented yet; see [Roadmap](#roadmap).
 - [x] Download details with piece map
 - [x] Desktop system tray integration
 - [x] Chromium extension handoff through a native messaging host (desktop)
-- [x] Android share / open-with intake for direct HTTP(S) URLs
+- [x] Android share / open-with intake for direct HTTP(S) URLs and magnet links
 - [x] YouTube video download with format selection (desktop: yt-dlp + ffmpeg; Android: built-in extractor)
 - [x] YouTube playlists (queue each entry) and common URL styles (watch, Shorts, live, embed, music, youtu.be)
 - [x] Facebook / fb.watch video download (desktop: yt-dlp; Android: progressive CDN extraction + HTTP)
@@ -42,6 +41,7 @@ implemented yet; see [Roadmap](#roadmap).
 - [x] Private Instagram reels/videos via in-app session login (Android WebView) or desktop cookies.txt / browser cookie import
 - [x] TikTok single-video download (desktop: yt-dlp; Android: progressive CDN extraction + HTTP) — slideshow/photo posts, live, and playlists are not supported
 - [x] Private TikTok videos via in-app session login (Android WebView) or desktop cookies.txt / browser cookie import
+- [x] Magnet and `.torrent` downloads (desktop: aria2 BitTorrent; Android: libtorrent4j) — downloads all files; seeding controlled in Settings
 
 ## Roadmap
 
@@ -49,10 +49,11 @@ Planned work (not shipped):
 
 - [ ] YouTube authenticated / private streams and channel pages
 - [ ] More video sites (Dailymotion, …)
-- [ ] Torrent / magnet support
+- [x] Torrent / magnet support
 - [ ] Signed Play Store releases (production keystore in CI)
 - [x] Automated Windows release zip in CI
 - [ ] Automated Linux release artifacts in CI
+- [ ] Per-file torrent selection
 
 ## Requirements
 
@@ -128,6 +129,10 @@ TikTok single-video links (`/@user/video/…`, `vm.tiktok.com`, etc.) follow
 the same split: desktop yt-dlp; Android progressive CDN download with Referer
 and session cookies when logged in. Slideshow/photo posts, live streams, and
 playlists are not supported. Private TikTok videos use Settings → TikTok.
+Magnet links and `.torrent` files download all contained files (no per-file
+picker yet). Desktop uses aria2 BitTorrent; Android uses libtorrent4j in the
+foreground service. Seeding (stop / ratio / time) is configured under
+Settings → Torrents.
 On desktop, yt-dlp can also use a Netscape cookies.txt file or
 `--cookies-from-browser` for Facebook, Instagram, and TikTok (separately configured).
 Keep desktop **yt-dlp** on the **nightly** channel for TikTok (`yt-dlp --update-to nightly`,

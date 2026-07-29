@@ -21,6 +21,7 @@ import '../../tiktok/tiktok_metadata_client.dart';
 import '../../tiktok/tiktok_models.dart';
 import '../../tiktok/tiktok_session.dart';
 import '../../tiktok/tiktok_webview_metadata.dart';
+import '../../torrent/torrent_models.dart';
 import '../../ytdlp/youtube_metadata_client.dart';
 import '../../ytdlp/ytdlp_client.dart';
 import '../../ytdlp/ytdlp_models.dart';
@@ -86,10 +87,14 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
     final clipboard = await Clipboard.getData(Clipboard.kTextPlain);
     final text = clipboard?.text?.trim();
     if (text != null) {
-      final normalized = UrlClassifier.normalizeInputUrl(text);
-      if (normalized.startsWith('http://') ||
-          normalized.startsWith('https://')) {
-        _url.text = normalized;
+      if (text.toLowerCase().startsWith('magnet:?')) {
+        _url.text = text;
+      } else {
+        final normalized = UrlClassifier.normalizeInputUrl(text);
+        if (normalized.startsWith('http://') ||
+            normalized.startsWith('https://')) {
+          _url.text = normalized;
+        }
       }
     }
     if (mounted) setState(() {});
@@ -110,6 +115,12 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
   bool get _isInstagramFlow => _urlKind == DownloadUrlKind.instagram;
 
   bool get _isTikTokFlow => _urlKind == DownloadUrlKind.tiktok;
+
+  bool get _isMagnetFlow => _urlKind == DownloadUrlKind.magnet;
+
+  bool get _isTorrentFlow => _urlKind == DownloadUrlKind.torrent;
+
+  bool get _isTorrentLikeFlow => _isMagnetFlow || _isTorrentFlow;
 
   bool get _isExtractorFlow =>
       _isYoutubeFlow ||
@@ -135,10 +146,15 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
                 enabled: !_submitting,
                 autofocus: true,
                 onChanged: (_) => setState(() {}),
-                decoration: const InputDecoration(
-                  labelText: 'URL',
+                decoration: InputDecoration(
+                  labelText: _isTorrentFlow ? 'Torrent / magnet' : 'URL',
                   hintText:
-                      'https://example.com/file.iso, YouTube, Facebook, Instagram, or TikTok',
+                      'https://…, magnet:?, YouTube, Facebook, Instagram, TikTok, or .torrent',
+                  suffixIcon: IconButton(
+                    tooltip: 'Browse .torrent file',
+                    onPressed: _submitting ? null : _pickTorrentFile,
+                    icon: const Icon(Icons.folder_open),
+                  ),
                 ),
               ),
               if (widget.capture != null) ...[
@@ -157,12 +173,14 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
               const SizedBox(height: 12),
               TextField(
                 controller: _fileName,
-                enabled: !_submitting && !_isExtractorFlow,
+                enabled: !_submitting && !_isExtractorFlow && !_isTorrentLikeFlow,
                 decoration: InputDecoration(
                   labelText: 'Filename override',
                   hintText: _isExtractorFlow
                       ? 'Set after choosing format'
-                      : 'Optional',
+                      : _isTorrentLikeFlow
+                          ? 'Uses torrent name'
+                          : 'Optional',
                 ),
               ),
               const SizedBox(height: 12),
@@ -237,7 +255,7 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
                     ],
                   ],
                 ),
-              if (!_isExtractorFlow) ...[
+              if (!_isExtractorFlow && !_isTorrentLikeFlow) ...[
                 const SizedBox(height: 12),
                 Row(
                   children: [
@@ -275,6 +293,20 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
                 ),
               ] else ...[
                 const SizedBox(height: 12),
+                if (_isTorrentLikeFlow) ...[
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Downloads all files in the torrent. '
+                      'Seeding is controlled in Settings → Torrents.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Start now'),
@@ -314,6 +346,8 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
                     DownloadUrlKind.facebook => 'Choose format',
                     DownloadUrlKind.instagram => 'Choose format',
                     DownloadUrlKind.tiktok => 'Choose format',
+                    DownloadUrlKind.magnet => 'Add magnet',
+                    DownloadUrlKind.torrent => 'Add torrent',
                     DownloadUrlKind.direct => 'Add',
                   },
                 ),
@@ -327,43 +361,124 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
     if (path != null) _directory.text = path;
   }
 
+  Future<void> _pickTorrentFile() async {
+    final file = await openFile(
+      acceptedTypeGroups: [
+        const XTypeGroup(
+          label: 'torrent',
+          extensions: ['torrent'],
+        ),
+      ],
+    );
+    if (file == null) return;
+    setState(() {
+      _url.text = file.path;
+      _fileName.text = p.basenameWithoutExtension(file.path);
+      _error = null;
+    });
+  }
+
   Future<void> _submit() async {
     final raw = _url.text.trim();
+    if (raw.toLowerCase().startsWith('magnet:?')) {
+      await _submitTorrent(raw, isMagnet: true);
+      return;
+    }
+
+    final kind = UrlClassifier.classify(raw);
+    if (kind == DownloadUrlKind.torrent) {
+      await _submitTorrent(raw, isMagnet: false);
+      return;
+    }
+
     final url = UrlClassifier.normalizeInputUrl(raw);
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
       setState(
         () => _error =
-            'Geonode supports HTTP, HTTPS, YouTube, Facebook, Instagram, and TikTok URLs.',
+            'Geonode supports HTTP, HTTPS, magnet links, .torrent files, '
+            'YouTube, Facebook, Instagram, and TikTok.',
       );
       return;
     }
 
-    final kind = UrlClassifier.classify(url);
-    if (kind == DownloadUrlKind.youtube) {
+    final urlKind = UrlClassifier.classify(url);
+    if (urlKind == DownloadUrlKind.youtube) {
       await _submitYoutube(UrlClassifier.normalizeYoutubeUrl(url));
       return;
     }
-    if (kind == DownloadUrlKind.youtubePlaylist) {
+    if (urlKind == DownloadUrlKind.youtubePlaylist) {
       await _submitYoutubePlaylist(url);
       return;
     }
-    if (kind == DownloadUrlKind.facebook) {
+    if (urlKind == DownloadUrlKind.facebook) {
       await _submitFacebook(UrlClassifier.normalizeFacebookUrl(url));
       return;
     }
-    if (kind == DownloadUrlKind.instagram) {
+    if (urlKind == DownloadUrlKind.instagram) {
       await _submitInstagram(UrlClassifier.normalizeInstagramUrl(url));
       return;
     }
-    if (kind == DownloadUrlKind.tiktok) {
+    if (urlKind == DownloadUrlKind.tiktok) {
       await _submitTikTok(UrlClassifier.normalizeTiktokUrl(url));
+      return;
+    }
+    if (urlKind == DownloadUrlKind.torrent) {
+      await _submitTorrent(url, isMagnet: false);
       return;
     }
 
     await _submitDirect(url);
   }
 
+  Future<void> _submitTorrent(String source, {required bool isMagnet}) async {
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+    try {
+      final settings = await ref.read(downloadRepositoryProvider).getSettings();
+      final options = TorrentDownloadOptions(
+        kind: isMagnet
+            ? TorrentDownloadOptions.kindMagnet
+            : TorrentDownloadOptions.kindTorrent,
+        torrentPath: isMagnet ? '' : source,
+        seedMode: TorrentSeedMode.parse(settings.torrentSeedMode),
+        seedRatio: settings.torrentSeedRatio,
+        seedTimeMinutes: settings.torrentSeedTimeMinutes,
+      );
+
+      final displayName = isMagnet
+          ? (UrlClassifier.magnetDisplayName(source) ?? 'Magnet download')
+          : p.basenameWithoutExtension(source);
+
+      await ref.read(downloadServiceProvider).addDownload(
+            NewDownload(
+              url: source,
+              directory: _directory.text.trim().isEmpty
+                  ? settings.downloadDirectory
+                  : _directory.text.trim(),
+              fileName: displayName,
+              split: 1,
+              startImmediately: _startImmediately,
+              source: 'manual',
+              options: options.toJson(),
+            ),
+          );
+      if (mounted) Navigator.of(context).pop();
+    } on DownloadAlreadyExistsException catch (e) {
+      if (mounted) setState(() => _error = e.toString());
+    } catch (e) {
+      if (mounted) setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
   String _androidHelpText() {
+    if (_isMagnetFlow || _isTorrentFlow) {
+      return 'Torrents and magnets download all files. '
+          'Seeding is controlled in Settings → Torrents.';
+    }
     if (_isYoutubeFlow) {
       return 'YouTube videos are extracted and saved to Downloads.';
     }

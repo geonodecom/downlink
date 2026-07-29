@@ -277,7 +277,12 @@ class DownloadRepository {
         totalLength: Value(totalLength),
         completedLength: Value(completedLength),
         downloadSpeed: Value(status.downloadSpeed),
-        connections: Value(status.connections),
+        uploadSpeed: Value(status.uploadSpeed),
+        connections: Value(
+          status.numPeers > status.connections
+              ? status.numPeers
+              : status.connections,
+        ),
         pieceLength: Value(status.pieceLength),
         numPieces: Value(status.numPieces),
         bitfield: Value(status.bitfield),
@@ -437,6 +442,18 @@ class DownloadRepository {
           key: 'last_update_check_at',
           value: settings.lastUpdateCheckAt?.toIso8601String() ?? '',
         ),
+        AppSettingsCompanion.insert(
+          key: 'torrent_seed_mode',
+          value: settings.torrentSeedMode,
+        ),
+        AppSettingsCompanion.insert(
+          key: 'torrent_seed_ratio',
+          value: settings.torrentSeedRatio.toString(),
+        ),
+        AppSettingsCompanion.insert(
+          key: 'torrent_seed_time_minutes',
+          value: settings.torrentSeedTimeMinutes.toString(),
+        ),
       ]);
     });
   }
@@ -463,6 +480,9 @@ class DownloadRepository {
         tiktokCookiesFromBrowser: '',
         skippedUpdateVersion: '',
         lastUpdateCheckAt: null,
+        torrentSeedMode: 'stop',
+        torrentSeedRatio: 1.0,
+        torrentSeedTimeMinutes: 60,
       ),
     );
   }
@@ -495,6 +515,11 @@ class DownloadRepository {
       tiktokCookiesFromBrowser: values['tiktok_cookies_from_browser'] ?? '',
       skippedUpdateVersion: values['skipped_update_version'] ?? '',
       lastUpdateCheckAt: _parseDateTime(values['last_update_check_at']),
+      torrentSeedMode: values['torrent_seed_mode'] ?? 'stop',
+      torrentSeedRatio:
+          double.tryParse(values['torrent_seed_ratio'] ?? '') ?? 1.0,
+      torrentSeedTimeMinutes:
+          int.tryParse(values['torrent_seed_time_minutes'] ?? '') ?? 60,
     );
   }
 

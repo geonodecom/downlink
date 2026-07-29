@@ -39,7 +39,9 @@ class ShareIntake {
 
   void _emit(String url) {
     final trimmed = url.trim();
-    if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+    if (!trimmed.startsWith('http://') &&
+        !trimmed.startsWith('https://') &&
+        !trimmed.startsWith('magnet:?')) {
       return;
     }
     _onCapture?.call(

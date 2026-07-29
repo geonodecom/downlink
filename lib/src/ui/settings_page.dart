@@ -62,6 +62,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
   late final TextEditingController _facebookCookiesPath;
   late final TextEditingController _instagramCookiesPath;
   late final TextEditingController _tiktokCookiesPath;
+  late final TextEditingController _torrentSeedRatio;
   late int _maxActive;
   late int _split;
   late String _themeMode;
@@ -69,6 +70,8 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
   late String _facebookCookiesFromBrowser;
   late String _instagramCookiesFromBrowser;
   late String _tiktokCookiesFromBrowser;
+  late String _torrentSeedMode;
+  late int _torrentSeedTimeMinutes;
   final List<_ValidationMessage> _messages = [];
   var _saving = false;
   var _checkingBundledTools = false;
@@ -95,6 +98,9 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
         TextEditingController(text: widget.settings.instagramCookiesPath);
     _tiktokCookiesPath =
         TextEditingController(text: widget.settings.tiktokCookiesPath);
+    _torrentSeedRatio = TextEditingController(
+      text: widget.settings.torrentSeedRatio.toString(),
+    );
     _maxActive = widget.settings.maxActiveDownloads;
     _split = widget.settings.defaultSplit;
     _themeMode = widget.settings.themeMode;
@@ -102,6 +108,8 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
     _facebookCookiesFromBrowser = widget.settings.facebookCookiesFromBrowser;
     _instagramCookiesFromBrowser = widget.settings.instagramCookiesFromBrowser;
     _tiktokCookiesFromBrowser = widget.settings.tiktokCookiesFromBrowser;
+    _torrentSeedMode = widget.settings.torrentSeedMode;
+    _torrentSeedTimeMinutes = widget.settings.torrentSeedTimeMinutes;
     unawaited(_refreshBundledToolsStatus());
     if (Platform.isAndroid || Platform.isWindows) {
       unawaited(
@@ -128,6 +136,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
     _facebookCookiesPath.dispose();
     _instagramCookiesPath.dispose();
     _tiktokCookiesPath.dispose();
+    _torrentSeedRatio.dispose();
     super.dispose();
   }
 
@@ -566,6 +575,53 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
             onChanged: (value) => setState(
               () => _tiktokCookiesFromBrowser = value ?? '',
             ),
+          ),
+        ],
+        const SizedBox(height: 20),
+        _SectionLabel(label: 'Torrents'),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          initialValue: _torrentSeedMode,
+          decoration: const InputDecoration(
+            labelText: 'After download completes',
+            helperText: 'Applies to new magnet and .torrent downloads.',
+          ),
+          items: const [
+            DropdownMenuItem(value: 'stop', child: Text('Stop seeding')),
+            DropdownMenuItem(value: 'ratio', child: Text('Seed until ratio')),
+            DropdownMenuItem(value: 'time', child: Text('Seed for a while')),
+          ],
+          onChanged: (value) =>
+              setState(() => _torrentSeedMode = value ?? 'stop'),
+        ),
+        if (_torrentSeedMode == 'ratio') ...[
+          const SizedBox(height: 12),
+          TextField(
+            controller: _torrentSeedRatio,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'Seed ratio',
+              helperText: 'Stop after uploaded / downloaded reaches this ratio.',
+            ),
+          ),
+        ],
+        if (_torrentSeedMode == 'time') ...[
+          const SizedBox(height: 12),
+          DropdownButtonFormField<int>(
+            initialValue: _torrentSeedTimeMinutes,
+            decoration: const InputDecoration(
+              labelText: 'Seed duration',
+            ),
+            items: const [
+              DropdownMenuItem(value: 15, child: Text('15 minutes')),
+              DropdownMenuItem(value: 30, child: Text('30 minutes')),
+              DropdownMenuItem(value: 60, child: Text('1 hour')),
+              DropdownMenuItem(value: 180, child: Text('3 hours')),
+              DropdownMenuItem(value: 360, child: Text('6 hours')),
+              DropdownMenuItem(value: 1440, child: Text('24 hours')),
+            ],
+            onChanged: (value) =>
+                setState(() => _torrentSeedTimeMinutes = value ?? 60),
           ),
         ],
         if (Platform.isAndroid || Platform.isWindows) ...[
@@ -1025,6 +1081,10 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
                   isAndroid ? '' : _tiktokCookiesFromBrowser,
               skippedUpdateVersion: widget.settings.skippedUpdateVersion,
               lastUpdateCheckAt: widget.settings.lastUpdateCheckAt,
+              torrentSeedMode: _torrentSeedMode,
+              torrentSeedRatio:
+                  double.tryParse(_torrentSeedRatio.text.trim()) ?? 1.0,
+              torrentSeedTimeMinutes: _torrentSeedTimeMinutes,
             ),
           );
     } catch (error) {

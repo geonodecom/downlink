@@ -49,6 +49,7 @@ class Aria2Status {
     required this.totalLength,
     required this.completedLength,
     required this.downloadSpeed,
+    this.uploadSpeed = 0,
     required this.connections,
     required this.pieceLength,
     required this.numPieces,
@@ -56,6 +57,8 @@ class Aria2Status {
     required this.errorCode,
     required this.errorMessage,
     required this.files,
+    this.numSeeders = 0,
+    this.numPeers = 0,
   });
 
   final String gid;
@@ -63,6 +66,7 @@ class Aria2Status {
   final int totalLength;
   final int completedLength;
   final int downloadSpeed;
+  final int uploadSpeed;
   final int connections;
   final int pieceLength;
   final int numPieces;
@@ -70,6 +74,15 @@ class Aria2Status {
   final int? errorCode;
   final String? errorMessage;
   final List<Aria2File> files;
+  final int numSeeders;
+  final int numPeers;
+
+  bool get isSeeding {
+    return status == 'active' &&
+        totalLength > 0 &&
+        completedLength >= totalLength &&
+        uploadSpeed > 0;
+  }
 
   String? get fileName {
     if (files.isEmpty || files.first.path.isEmpty) return null;
@@ -95,6 +108,7 @@ class Aria2Status {
       totalLength: _parseInt(json['totalLength']),
       completedLength: _parseInt(json['completedLength']),
       downloadSpeed: _parseInt(json['downloadSpeed']),
+      uploadSpeed: _parseInt(json['uploadSpeed']),
       connections: _parseInt(json['connections']),
       pieceLength: _parseInt(json['pieceLength']),
       numPieces: _parseInt(json['numPieces']),
@@ -107,6 +121,8 @@ class Aria2Status {
                 .map((item) => Aria2File.fromJson(item.cast<String, Object?>()))
                 .toList()
           : const [],
+      numSeeders: _parseInt(json['numSeeders']),
+      numPeers: _parseInt(json['numPeers']),
     );
   }
 

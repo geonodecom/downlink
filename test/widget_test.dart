@@ -72,6 +72,18 @@ void main() {
     expect(progressSummary(active), '512 KB / 1.0 MB');
     expect(activitySummary(active), ['1.0 KB/s', '8m 32s', '2 connections']);
     expect(progressIndicatorValue(active), 0.5);
+
+    final seeding = _download(
+      status: DownloadStatus.active,
+      fileName: 'movie.mkv',
+      totalLength: 1024,
+      completedLength: 1024,
+      optionsJson:
+          '{"kind":"torrent","seedMode":"ratio","seedRatio":1.0,'
+          '"seedTimeMinutes":60}',
+    );
+    expect(downloadStatusLabel(seeding), 'Seeding');
+    expect(activitySummary(seeding), ['↑ 0 B/s', 'waiting for peers']);
   });
 }
 
@@ -82,6 +94,7 @@ DownloadEntity _download({
   int completedLength = 0,
   int downloadSpeed = 0,
   int connections = 0,
+  String? optionsJson,
 }) {
   final now = DateTime(2026);
   return DownloadEntity(
@@ -95,6 +108,7 @@ DownloadEntity _download({
     totalLength: totalLength,
     completedLength: completedLength,
     downloadSpeed: downloadSpeed,
+    uploadSpeed: 0,
     connections: connections,
     split: 16,
     pieceLength: 0,
@@ -102,7 +116,7 @@ DownloadEntity _download({
     bitfield: null,
     error: null,
     source: 'manual',
-    optionsJson: null,
+    optionsJson: optionsJson,
     createdAt: now,
     updatedAt: now,
     completedAt: null,

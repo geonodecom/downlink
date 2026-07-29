@@ -80,6 +80,21 @@ class Aria2ProcessManager {
       '--split=$defaultSplit',
       '--max-connection-per-server=$defaultSplit',
       '--dir=$downloadDirectory',
+      '--enable-dht=true',
+      '--bt-enable-lpd=true',
+      '--enable-peer-exchange=true',
+      '--listen-port=6881-6999',
+      '--dht-listen-port=6881-6999',
+      '--bt-max-peers=55',
+      '--follow-torrent=true',
+      // Private trackers (e.g. TorrentBD) often whitelist clients by peer ID /
+      // User-Agent and reject aria2's defaults with "banned client".
+      '--peer-id-prefix=-qB4620-',
+      '--peer-agent=qBittorrent/4.6.2',
+      '--user-agent=qBittorrent/4.6.2',
+      // Keep Flutter diagnostics readable; progress is polled via RPC.
+      '--console-log-level=warn',
+      '--summary-interval=0',
     ];
 
     stderr.writeln(

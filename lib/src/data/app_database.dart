@@ -20,6 +20,7 @@ class DownloadEntries extends Table {
   IntColumn get totalLength => integer().withDefault(const Constant(0))();
   IntColumn get completedLength => integer().withDefault(const Constant(0))();
   IntColumn get downloadSpeed => integer().withDefault(const Constant(0))();
+  IntColumn get uploadSpeed => integer().withDefault(const Constant(0))();
   IntColumn get connections => integer().withDefault(const Constant(0))();
   IntColumn get split => integer().withDefault(const Constant(16))();
   IntColumn get pieceLength => integer().withDefault(const Constant(0))();
@@ -51,7 +52,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration {
@@ -68,6 +69,12 @@ class AppDatabase extends _$AppDatabase {
           await migrator.addColumn(
             downloadEntries,
             downloadEntries.displayName,
+          );
+        }
+        if (from < 4) {
+          await migrator.addColumn(
+            downloadEntries,
+            downloadEntries.uploadSpeed,
           );
         }
       },
@@ -102,6 +109,9 @@ class GeonodeSettings {
     this.tiktokCookiesFromBrowser = '',
     this.skippedUpdateVersion = '',
     this.lastUpdateCheckAt,
+    this.torrentSeedMode = 'stop',
+    this.torrentSeedRatio = 1.0,
+    this.torrentSeedTimeMinutes = 60,
   });
 
   final String downloadDirectory;
@@ -120,6 +130,9 @@ class GeonodeSettings {
   final String tiktokCookiesFromBrowser;
   final String skippedUpdateVersion;
   final DateTime? lastUpdateCheckAt;
+  final String torrentSeedMode;
+  final double torrentSeedRatio;
+  final int torrentSeedTimeMinutes;
 
   GeonodeSettings copyWith({
     String? downloadDirectory,
@@ -138,6 +151,9 @@ class GeonodeSettings {
     String? tiktokCookiesFromBrowser,
     String? skippedUpdateVersion,
     DateTime? lastUpdateCheckAt,
+    String? torrentSeedMode,
+    double? torrentSeedRatio,
+    int? torrentSeedTimeMinutes,
   }) {
     return GeonodeSettings(
       downloadDirectory: downloadDirectory ?? this.downloadDirectory,
@@ -163,6 +179,10 @@ class GeonodeSettings {
       skippedUpdateVersion:
           skippedUpdateVersion ?? this.skippedUpdateVersion,
       lastUpdateCheckAt: lastUpdateCheckAt ?? this.lastUpdateCheckAt,
+      torrentSeedMode: torrentSeedMode ?? this.torrentSeedMode,
+      torrentSeedRatio: torrentSeedRatio ?? this.torrentSeedRatio,
+      torrentSeedTimeMinutes:
+          torrentSeedTimeMinutes ?? this.torrentSeedTimeMinutes,
     );
   }
 }
