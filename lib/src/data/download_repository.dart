@@ -429,6 +429,14 @@ class DownloadRepository {
           key: 'tiktok_cookies_from_browser',
           value: settings.tiktokCookiesFromBrowser,
         ),
+        AppSettingsCompanion.insert(
+          key: 'skipped_update_version',
+          value: settings.skippedUpdateVersion,
+        ),
+        AppSettingsCompanion.insert(
+          key: 'last_update_check_at',
+          value: settings.lastUpdateCheckAt?.toIso8601String() ?? '',
+        ),
       ]);
     });
   }
@@ -453,6 +461,8 @@ class DownloadRepository {
         instagramCookiesFromBrowser: '',
         tiktokCookiesPath: '',
         tiktokCookiesFromBrowser: '',
+        skippedUpdateVersion: '',
+        lastUpdateCheckAt: null,
       ),
     );
   }
@@ -483,7 +493,14 @@ class DownloadRepository {
           values['instagram_cookies_from_browser'] ?? '',
       tiktokCookiesPath: values['tiktok_cookies_path'] ?? '',
       tiktokCookiesFromBrowser: values['tiktok_cookies_from_browser'] ?? '',
+      skippedUpdateVersion: values['skipped_update_version'] ?? '',
+      lastUpdateCheckAt: _parseDateTime(values['last_update_check_at']),
     );
+  }
+
+  DateTime? _parseDateTime(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    return DateTime.tryParse(raw);
   }
 }
 

@@ -23,6 +23,11 @@ if (Test-Path $NoticesSrc) {
   Copy-Item -Force $NoticesSrc (Join-Path $ReleaseDir "THIRD_PARTY_NOTICES.md")
 }
 
+$ApplyUpdateScript = Join-Path $PSScriptRoot "apply_update.ps1"
+if (Test-Path $ApplyUpdateScript) {
+  Copy-Item -Force $ApplyUpdateScript (Join-Path $ReleaseDir "apply_update.ps1")
+}
+
 Write-Host "Building geonode-download-manager-host..."
 $HostOut = Join-Path $Root "build\geonode-download-manager-host-cli"
 dart build cli -t bin/geonode_download_manager_host.dart -o $HostOut

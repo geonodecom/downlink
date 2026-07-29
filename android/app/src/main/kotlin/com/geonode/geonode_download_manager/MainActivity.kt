@@ -3,18 +3,23 @@ package com.geonode.geonode_download_manager
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import com.geonode.geonode_download_manager.download.DownloadEnginePlugin
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import java.io.File
 
 class MainActivity : FlutterActivity() {
     private val shareChannelName = "com.geonode.geonode_download_manager/share"
+    private val appUpdateChannelName = "com.geonode.geonode_download_manager/app_update"
     private var shareChannel: MethodChannel? = null
+    private var appUpdateChannel: MethodChannel? = null
     private var pendingShareUrl: String? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -31,7 +36,49 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+        appUpdateChannel = MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            appUpdateChannelName,
+        )
+        appUpdateChannel?.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "installApk" -> {
+                    val path = call.argument<String>("path")
+                    if (path.isNullOrBlank()) {
+                        result.error("invalid_args", "path is required", null)
+                        return@setMethodCallHandler
+                    }
+                    try {
+                        installApk(path)
+                        result.success(null)
+                    } catch (e: Exception) {
+                        result.error("install_failed", e.message, null)
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
         maybeCaptureShare(intent)
+    }
+
+    private fun installApk(path: String) {
+        val file = File(path)
+        if (!file.exists()) {
+            throw IllegalArgumentException("APK file not found")
+        }
+        val uri: Uri = FileProvider.getUriForFile(
+            this,
+            "${applicationContext.packageName}.fileprovider",
+            file,
+        )
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "application/vnd.android.package-archive")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        if (intent.resolveActivity(packageManager) == null) {
+            throw IllegalStateException("No app can install APK packages")
+        }
+        startActivity(intent)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

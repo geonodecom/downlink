@@ -100,6 +100,8 @@ class GeonodeSettings {
     this.instagramCookiesFromBrowser = '',
     this.tiktokCookiesPath = '',
     this.tiktokCookiesFromBrowser = '',
+    this.skippedUpdateVersion = '',
+    this.lastUpdateCheckAt,
   });
 
   final String downloadDirectory;
@@ -116,6 +118,8 @@ class GeonodeSettings {
   final String instagramCookiesFromBrowser;
   final String tiktokCookiesPath;
   final String tiktokCookiesFromBrowser;
+  final String skippedUpdateVersion;
+  final DateTime? lastUpdateCheckAt;
 
   GeonodeSettings copyWith({
     String? downloadDirectory,
@@ -132,6 +136,8 @@ class GeonodeSettings {
     String? instagramCookiesFromBrowser,
     String? tiktokCookiesPath,
     String? tiktokCookiesFromBrowser,
+    String? skippedUpdateVersion,
+    DateTime? lastUpdateCheckAt,
   }) {
     return GeonodeSettings(
       downloadDirectory: downloadDirectory ?? this.downloadDirectory,
@@ -154,6 +160,9 @@ class GeonodeSettings {
       tiktokCookiesPath: tiktokCookiesPath ?? this.tiktokCookiesPath,
       tiktokCookiesFromBrowser:
           tiktokCookiesFromBrowser ?? this.tiktokCookiesFromBrowser,
+      skippedUpdateVersion:
+          skippedUpdateVersion ?? this.skippedUpdateVersion,
+      lastUpdateCheckAt: lastUpdateCheckAt ?? this.lastUpdateCheckAt,
     );
   }
 }

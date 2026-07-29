@@ -311,6 +311,21 @@ flutter install -d <android-device-id>
 adb install build/app/outputs/flutter-apk/app-release.apk
 ```
 
+## Updates
+
+Geonode Download Manager checks GitHub for new releases on Windows and Android.
+When an update is available, the app can download the official release asset inside
+the app.
+
+- **Android:** After download, the system APK installer opens. You may need to
+  allow installing updates for this app (install unknown apps).
+- **Windows:** In-app updates apply to installs under
+  `%LOCALAPPDATA%\geonode-download-manager` (see `tool/windows/install.ps1`).
+  The app downloads the release zip, quits, applies files via `apply_update.ps1`,
+  and restarts. Portable or debug builds without that script must update manually
+  from GitHub.
+- **Linux:** No automated update yet; download new builds from GitHub releases.
+
 ## License
 
 [MIT](LICENSE)

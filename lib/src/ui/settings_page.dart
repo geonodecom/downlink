@@ -15,6 +15,7 @@ import '../ytdlp/android_ffmpeg.dart';
 import 'widgets/facebook_login_dialog.dart';
 import 'widgets/instagram_login_dialog.dart';
 import 'widgets/tiktok_login_dialog.dart';
+import 'widgets/update_available_dialog.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -78,6 +79,8 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
   var _instagramSessionLoading = true;
   var _tiktokLoggedIn = false;
   var _tiktokSessionLoading = true;
+  var _checkingUpdates = false;
+  String? _updateMessage;
 
   @override
   void initState() {
@@ -100,6 +103,11 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
     _instagramCookiesFromBrowser = widget.settings.instagramCookiesFromBrowser;
     _tiktokCookiesFromBrowser = widget.settings.tiktokCookiesFromBrowser;
     unawaited(_refreshBundledToolsStatus());
+    if (Platform.isAndroid || Platform.isWindows) {
+      unawaited(
+        ref.read(appUpdateControllerProvider.notifier).loadVersionLabel(),
+      );
+    }
     if (Platform.isAndroid) {
       unawaited(_refreshFacebookSession());
       unawaited(_refreshInstagramSession());
@@ -560,6 +568,35 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
             ),
           ),
         ],
+        if (Platform.isAndroid || Platform.isWindows) ...[
+          const SizedBox(height: 20),
+          _SectionLabel(label: 'Updates'),
+          const SizedBox(height: 8),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('App version'),
+            subtitle: Text(
+              ref.watch(appUpdateControllerProvider).currentVersionLabel ??
+                  'Loading…',
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FilledButton.tonal(
+              onPressed: _checkingUpdates ? null : _checkForUpdates,
+              child: _checkingUpdates
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Check for updates'),
+            ),
+          ),
+          if (_updateMessage != null) ...[
+            const SizedBox(height: 8),
+            Text(_updateMessage!),
+          ],
+        ],
         const SizedBox(height: 20),
         _SectionLabel(label: 'Appearance'),
         const SizedBox(height: 8),
@@ -773,6 +810,29 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
     }
   }
 
+  Future<void> _checkForUpdates() async {
+    setState(() {
+      _checkingUpdates = true;
+      _updateMessage = null;
+    });
+    final offer = await ref
+        .read(appUpdateControllerProvider.notifier)
+        .checkForUpdate(ignoreSkip: true);
+    if (!mounted) return;
+    setState(() {
+      _checkingUpdates = false;
+      if (offer != null) {
+        _updateMessage = 'Version ${offer.version} is available.';
+      } else {
+        final message = ref.read(appUpdateControllerProvider).message;
+        _updateMessage = message ?? 'You are up to date.';
+      }
+    });
+    if (offer != null && mounted) {
+      await showUpdateAvailableDialog(context);
+    }
+  }
+
   Future<void> _refreshBundledToolsStatus() async {
     setState(() => _checkingBundledTools = true);
 
@@ -963,6 +1023,8 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
               tiktokCookiesPath: isAndroid ? '' : _tiktokCookiesPath.text.trim(),
               tiktokCookiesFromBrowser:
                   isAndroid ? '' : _tiktokCookiesFromBrowser,
+              skippedUpdateVersion: widget.settings.skippedUpdateVersion,
+              lastUpdateCheckAt: widget.settings.lastUpdateCheckAt,
             ),
           );
     } catch (error) {

@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -9,6 +12,7 @@ import 'history_page.dart';
 import 'queue_page.dart';
 import 'settings_page.dart';
 import 'widgets/add_download_dialog.dart';
+import 'widgets/update_available_dialog.dart';
 
 class HomeShell extends ConsumerStatefulWidget {
   const HomeShell({super.key});
@@ -20,6 +24,14 @@ class HomeShell extends ConsumerStatefulWidget {
 class _HomeShellState extends ConsumerState<HomeShell> {
   int _lastAddRequest = 0;
   bool _captureDialogOpen = false;
+  bool _updateCheckStarted = false;
+  bool _updateDialogOpen = false;
+
+  @override
+  void initState() {
+    super.initState();
+    ref.read(appUpdateControllerProvider.notifier).loadVersionLabel();
+  }
 
   static const _destinations = [
     (Symbols.download, 'Downloads'),
@@ -40,6 +52,14 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     ref.listen(downloadCaptureQueueProvider, (previous, next) {
       if (next.isNotEmpty) {
         _drainCaptureQueue();
+      }
+    });
+    ref.listen(startupProvider, (previous, next) {
+      if (next.hasValue && !_updateCheckStarted) {
+        _updateCheckStarted = true;
+        if (Platform.isAndroid || Platform.isWindows) {
+          unawaited(_runBackgroundUpdateCheck());
+        }
       }
     });
 
@@ -121,6 +141,16 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       ShellSection.settings => const SettingsPage(),
       ShellSection.diagnostics => const DiagnosticsPage(),
     };
+  }
+
+  Future<void> _runBackgroundUpdateCheck() async {
+    final offer = await ref
+        .read(appUpdateControllerProvider.notifier)
+        .checkForUpdate(background: true);
+    if (!mounted || offer == null || _updateDialogOpen) return;
+    _updateDialogOpen = true;
+    await showUpdateAvailableDialog(context);
+    _updateDialogOpen = false;
   }
 
   Future<void> _drainCaptureQueue() async {

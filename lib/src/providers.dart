@@ -16,6 +16,8 @@ import 'instagram/instagram_session.dart';
 import 'tiktok/tiktok_session.dart';
 import 'services/diagnostics.dart';
 import 'services/download_service.dart';
+import 'app_update/app_update_controller.dart';
+import 'app_update/app_update_service.dart';
 import 'ytdlp/youtube_metadata_client.dart';
 
 enum ShellSection { downloads, queue, history, settings, diagnostics }
@@ -211,3 +213,16 @@ final historyProvider = StreamProvider<List<DownloadEntity>>((ref) {
 final settingsProvider = StreamProvider<GeonodeSettings>((ref) {
   return ref.watch(downloadRepositoryProvider).watchSettings();
 });
+
+final appUpdateServiceProvider = Provider<AppUpdateService>((ref) {
+  final service = AppUpdateService(
+    repository: ref.watch(downloadRepositoryProvider),
+  );
+  ref.onDispose(service.dispose);
+  return service;
+});
+
+final appUpdateControllerProvider =
+    NotifierProvider<AppUpdateController, AppUpdateState>(
+      AppUpdateController.new,
+    );
