@@ -6,7 +6,7 @@ const blocklistItemsEl = document.getElementById("blocklist-items");
 
 const STATUS_LABELS = {
   ready: "Connected",
-  app_unavailable: "Geonode not running",
+  app_unavailable: "Downlink not running",
   host_unavailable: "Native host not installed",
 };
 

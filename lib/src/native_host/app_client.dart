@@ -70,7 +70,7 @@ class NativeHostAppClient implements NativeHostAppConnection {
         await Future<void>.delayed(const Duration(milliseconds: 150));
       }
     }
-    throw TimeoutException('Geonode did not become available: $lastError');
+    throw TimeoutException('Downlink did not become available: $lastError');
   }
 
   Future<Map<String, Object?>> _sendOnce(Map<String, Object?> command) async {
@@ -139,13 +139,13 @@ class NativeHostAppClient implements NativeHostAppConnection {
 }
 
 String _defaultAppPath() {
-  final override = Platform.environment['GEONODE_APP_PATH'];
+  final override = Platform.environment['DOWNLINK_APP_PATH'];
   if (override != null && override.trim().isNotEmpty) return override;
   final dir = p.dirname(Platform.resolvedExecutable);
   if (Platform.isWindows) {
-    return p.join(dir, 'geonode-download-manager.exe');
+    return p.join(dir, 'downlink.exe');
   }
-  return p.join(dir, 'geonode-download-manager');
+  return p.join(dir, 'downlink');
 }
 
 bool _shouldLaunchApp(Map<String, Object?> command) {

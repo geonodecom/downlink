@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:geonode_download_manager/src/native_host/native_host.dart';
-import 'package:geonode_download_manager/src/native_host/app_client.dart';
-import 'package:geonode_download_manager/src/native_host/native_messaging.dart';
+import 'package:downlink/src/native_host/native_host.dart';
+import 'package:downlink/src/native_host/app_client.dart';
+import 'package:downlink/src/native_host/native_messaging.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

@@ -5,6 +5,8 @@ enum DownloadUrlKind {
   facebook,
   instagram,
   tiktok,
+  magnet,
+  torrent,
 }
 
 /// Classifies download URLs for routing to direct HTTP or extractors.
@@ -75,6 +77,16 @@ class UrlClassifier {
   }
 
   static DownloadUrlKind classify(String url) {
+    final trimmed = url.trim();
+    if (trimmed.toLowerCase().startsWith('magnet:?')) {
+      return DownloadUrlKind.magnet;
+    }
+
+    final asPath = trimmed.replaceAll('\\', '/');
+    if (asPath.toLowerCase().endsWith('.torrent')) {
+      return DownloadUrlKind.torrent;
+    }
+
     final normalized = normalizeInputUrl(url);
     final uri = Uri.tryParse(normalized);
     if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
@@ -82,6 +94,10 @@ class UrlClassifier {
     }
 
     final host = uri.host.toLowerCase();
+    final path = uri.path.toLowerCase();
+    if (path.endsWith('.torrent')) {
+      return DownloadUrlKind.torrent;
+    }
 
     if (_isFacebookHost(host)) {
       return DownloadUrlKind.facebook;
@@ -123,6 +139,19 @@ class UrlClassifier {
       classify(url) == DownloadUrlKind.instagram;
 
   static bool isTiktok(String url) => classify(url) == DownloadUrlKind.tiktok;
+
+  static bool isMagnet(String url) => classify(url) == DownloadUrlKind.magnet;
+
+  static bool isTorrent(String url) => classify(url) == DownloadUrlKind.torrent;
+
+  /// Display name for a magnet URI (dn= when present).
+  static String? magnetDisplayName(String url) {
+    final uri = Uri.tryParse(url.trim());
+    if (uri == null || uri.scheme.toLowerCase() != 'magnet') return null;
+    final dn = uri.queryParameters['dn'];
+    if (dn == null || dn.trim().isEmpty) return null;
+    return Uri.decodeComponent(dn.replaceAll('+', ' ')).trim();
+  }
 
   /// Extracts an 11-character YouTube video id when present.
   static String? extractYoutubeVideoId(String url) {

@@ -1,4 +1,4 @@
-# Build Geonode Download Manager for Windows (release) and geonode-download-manager-host.exe
+# Build Downlink for Windows (release) and downlink-host.exe
 $ErrorActionPreference = "Stop"
 
 $Root = Resolve-Path (Join-Path $PSScriptRoot "..\..")
@@ -23,19 +23,24 @@ if (Test-Path $NoticesSrc) {
   Copy-Item -Force $NoticesSrc (Join-Path $ReleaseDir "THIRD_PARTY_NOTICES.md")
 }
 
-Write-Host "Building geonode-download-manager-host..."
-$HostOut = Join-Path $Root "build\geonode-download-manager-host-cli"
-dart build cli -t bin/geonode_download_manager_host.dart -o $HostOut
+$ApplyUpdateScript = Join-Path $PSScriptRoot "apply_update.ps1"
+if (Test-Path $ApplyUpdateScript) {
+  Copy-Item -Force $ApplyUpdateScript (Join-Path $ReleaseDir "apply_update.ps1")
+}
 
-$HostBin = Join-Path $HostOut "bundle\bin\geonode_download_manager_host.exe"
+Write-Host "Building downlink-host..."
+$HostOut = Join-Path $Root "build\downlink-host-cli"
+dart build cli -t bin/downlink_host.dart -o $HostOut
+
+$HostBin = Join-Path $HostOut "bundle\bin\downlink_host.exe"
 if (-not (Test-Path $HostBin)) {
   # Older/dart layout may omit .exe in path listing
-  $alt = Get-ChildItem -Path (Join-Path $HostOut "bundle\bin") -Filter "geonode_download_manager_host*" | Select-Object -First 1
-  if ($null -eq $alt) { throw "geonode-download-manager-host binary not found under $HostOut" }
+  $alt = Get-ChildItem -Path (Join-Path $HostOut "bundle\bin") -Filter "downlink_host*" | Select-Object -First 1
+  if ($null -eq $alt) { throw "downlink-host binary not found under $HostOut" }
   $HostBin = $alt.FullName
 }
 
-$HostCopy = Join-Path $Root "build\geonode-download-manager-host.exe"
+$HostCopy = Join-Path $Root "build\downlink-host.exe"
 Copy-Item -Force $HostBin $HostCopy
 Write-Host "Built: $HostCopy"
 Write-Host "App bundle: $(Join-Path $Root 'build\windows\x64\runner\Release')"

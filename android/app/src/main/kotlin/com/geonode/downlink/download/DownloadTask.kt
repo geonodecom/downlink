@@ -1,4 +1,4 @@
-package com.geonode.geonode_download_manager.download
+package com.geonode.downlink.download
 
 data class DownloadTask(
     val gid: String,
@@ -11,6 +11,7 @@ data class DownloadTask(
     var totalLength: Long,
     var completedLength: Long,
     var downloadSpeed: Long,
+    var uploadSpeed: Long = 0,
     var connections: Int,
     var pieceLength: Long,
     var numPieces: Int,
@@ -21,15 +22,19 @@ data class DownloadTask(
     var queuePosition: Int,
     val createdAt: Long,
     var updatedAt: Long,
+    var isTorrent: Boolean = false,
 ) {
     fun toStatusMap(): Map<String, Any?> {
-        val path = contentUri ?: partPath ?: ""
+        // Never report the temp `{gid}.part` path — Dart derives the display
+        // name from the last path segment and would overwrite the real title.
+        val path = contentUri ?: FilePathHint(directory, fileName)
         return mapOf(
             "gid" to gid,
             "status" to status,
             "totalLength" to totalLength.toString(),
             "completedLength" to completedLength.toString(),
             "downloadSpeed" to downloadSpeed.toString(),
+            "uploadSpeed" to uploadSpeed.toString(),
             "connections" to connections.toString(),
             "pieceLength" to pieceLength.toString(),
             "numPieces" to numPieces.toString(),
@@ -45,5 +50,10 @@ data class DownloadTask(
                 ),
             ),
         )
+    }
+
+    private fun FilePathHint(directory: String, fileName: String): String {
+        if (directory.isBlank()) return fileName
+        return "$directory${java.io.File.separator}$fileName"
     }
 }

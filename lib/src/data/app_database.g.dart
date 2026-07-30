@@ -136,6 +136,18 @@ class $DownloadEntriesTable extends DownloadEntries
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _uploadSpeedMeta = const VerificationMeta(
+    'uploadSpeed',
+  );
+  @override
+  late final GeneratedColumn<int> uploadSpeed = GeneratedColumn<int>(
+    'upload_speed',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _connectionsMeta = const VerificationMeta(
     'connections',
   );
@@ -281,6 +293,7 @@ class $DownloadEntriesTable extends DownloadEntries
     totalLength,
     completedLength,
     downloadSpeed,
+    uploadSpeed,
     connections,
     split,
     pieceLength,
@@ -397,6 +410,15 @@ class $DownloadEntriesTable extends DownloadEntries
         downloadSpeed.isAcceptableOrUnknown(
           data['download_speed']!,
           _downloadSpeedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('upload_speed')) {
+      context.handle(
+        _uploadSpeedMeta,
+        uploadSpeed.isAcceptableOrUnknown(
+          data['upload_speed']!,
+          _uploadSpeedMeta,
         ),
       );
     }
@@ -548,6 +570,10 @@ class $DownloadEntriesTable extends DownloadEntries
         DriftSqlType.int,
         data['${effectivePrefix}download_speed'],
       )!,
+      uploadSpeed: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}upload_speed'],
+      )!,
       connections: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}connections'],
@@ -618,6 +644,7 @@ class DownloadEntity extends DataClass implements Insertable<DownloadEntity> {
   final int totalLength;
   final int completedLength;
   final int downloadSpeed;
+  final int uploadSpeed;
   final int connections;
   final int split;
   final int pieceLength;
@@ -643,6 +670,7 @@ class DownloadEntity extends DataClass implements Insertable<DownloadEntity> {
     required this.totalLength,
     required this.completedLength,
     required this.downloadSpeed,
+    required this.uploadSpeed,
     required this.connections,
     required this.split,
     required this.pieceLength,
@@ -679,6 +707,7 @@ class DownloadEntity extends DataClass implements Insertable<DownloadEntity> {
     map['total_length'] = Variable<int>(totalLength);
     map['completed_length'] = Variable<int>(completedLength);
     map['download_speed'] = Variable<int>(downloadSpeed);
+    map['upload_speed'] = Variable<int>(uploadSpeed);
     map['connections'] = Variable<int>(connections);
     map['split'] = Variable<int>(split);
     map['piece_length'] = Variable<int>(pieceLength);
@@ -724,6 +753,7 @@ class DownloadEntity extends DataClass implements Insertable<DownloadEntity> {
       totalLength: Value(totalLength),
       completedLength: Value(completedLength),
       downloadSpeed: Value(downloadSpeed),
+      uploadSpeed: Value(uploadSpeed),
       connections: Value(connections),
       split: Value(split),
       pieceLength: Value(pieceLength),
@@ -767,6 +797,7 @@ class DownloadEntity extends DataClass implements Insertable<DownloadEntity> {
       totalLength: serializer.fromJson<int>(json['totalLength']),
       completedLength: serializer.fromJson<int>(json['completedLength']),
       downloadSpeed: serializer.fromJson<int>(json['downloadSpeed']),
+      uploadSpeed: serializer.fromJson<int>(json['uploadSpeed']),
       connections: serializer.fromJson<int>(json['connections']),
       split: serializer.fromJson<int>(json['split']),
       pieceLength: serializer.fromJson<int>(json['pieceLength']),
@@ -797,6 +828,7 @@ class DownloadEntity extends DataClass implements Insertable<DownloadEntity> {
       'totalLength': serializer.toJson<int>(totalLength),
       'completedLength': serializer.toJson<int>(completedLength),
       'downloadSpeed': serializer.toJson<int>(downloadSpeed),
+      'uploadSpeed': serializer.toJson<int>(uploadSpeed),
       'connections': serializer.toJson<int>(connections),
       'split': serializer.toJson<int>(split),
       'pieceLength': serializer.toJson<int>(pieceLength),
@@ -825,6 +857,7 @@ class DownloadEntity extends DataClass implements Insertable<DownloadEntity> {
     int? totalLength,
     int? completedLength,
     int? downloadSpeed,
+    int? uploadSpeed,
     int? connections,
     int? split,
     int? pieceLength,
@@ -850,6 +883,7 @@ class DownloadEntity extends DataClass implements Insertable<DownloadEntity> {
     totalLength: totalLength ?? this.totalLength,
     completedLength: completedLength ?? this.completedLength,
     downloadSpeed: downloadSpeed ?? this.downloadSpeed,
+    uploadSpeed: uploadSpeed ?? this.uploadSpeed,
     connections: connections ?? this.connections,
     split: split ?? this.split,
     pieceLength: pieceLength ?? this.pieceLength,
@@ -891,6 +925,9 @@ class DownloadEntity extends DataClass implements Insertable<DownloadEntity> {
       downloadSpeed: data.downloadSpeed.present
           ? data.downloadSpeed.value
           : this.downloadSpeed,
+      uploadSpeed: data.uploadSpeed.present
+          ? data.uploadSpeed.value
+          : this.uploadSpeed,
       connections: data.connections.present
           ? data.connections.value
           : this.connections,
@@ -931,6 +968,7 @@ class DownloadEntity extends DataClass implements Insertable<DownloadEntity> {
           ..write('totalLength: $totalLength, ')
           ..write('completedLength: $completedLength, ')
           ..write('downloadSpeed: $downloadSpeed, ')
+          ..write('uploadSpeed: $uploadSpeed, ')
           ..write('connections: $connections, ')
           ..write('split: $split, ')
           ..write('pieceLength: $pieceLength, ')
@@ -961,6 +999,7 @@ class DownloadEntity extends DataClass implements Insertable<DownloadEntity> {
     totalLength,
     completedLength,
     downloadSpeed,
+    uploadSpeed,
     connections,
     split,
     pieceLength,
@@ -990,6 +1029,7 @@ class DownloadEntity extends DataClass implements Insertable<DownloadEntity> {
           other.totalLength == this.totalLength &&
           other.completedLength == this.completedLength &&
           other.downloadSpeed == this.downloadSpeed &&
+          other.uploadSpeed == this.uploadSpeed &&
           other.connections == this.connections &&
           other.split == this.split &&
           other.pieceLength == this.pieceLength &&
@@ -1017,6 +1057,7 @@ class DownloadEntriesCompanion extends UpdateCompanion<DownloadEntity> {
   final Value<int> totalLength;
   final Value<int> completedLength;
   final Value<int> downloadSpeed;
+  final Value<int> uploadSpeed;
   final Value<int> connections;
   final Value<int> split;
   final Value<int> pieceLength;
@@ -1043,6 +1084,7 @@ class DownloadEntriesCompanion extends UpdateCompanion<DownloadEntity> {
     this.totalLength = const Value.absent(),
     this.completedLength = const Value.absent(),
     this.downloadSpeed = const Value.absent(),
+    this.uploadSpeed = const Value.absent(),
     this.connections = const Value.absent(),
     this.split = const Value.absent(),
     this.pieceLength = const Value.absent(),
@@ -1070,6 +1112,7 @@ class DownloadEntriesCompanion extends UpdateCompanion<DownloadEntity> {
     this.totalLength = const Value.absent(),
     this.completedLength = const Value.absent(),
     this.downloadSpeed = const Value.absent(),
+    this.uploadSpeed = const Value.absent(),
     this.connections = const Value.absent(),
     this.split = const Value.absent(),
     this.pieceLength = const Value.absent(),
@@ -1103,6 +1146,7 @@ class DownloadEntriesCompanion extends UpdateCompanion<DownloadEntity> {
     Expression<int>? totalLength,
     Expression<int>? completedLength,
     Expression<int>? downloadSpeed,
+    Expression<int>? uploadSpeed,
     Expression<int>? connections,
     Expression<int>? split,
     Expression<int>? pieceLength,
@@ -1130,6 +1174,7 @@ class DownloadEntriesCompanion extends UpdateCompanion<DownloadEntity> {
       if (totalLength != null) 'total_length': totalLength,
       if (completedLength != null) 'completed_length': completedLength,
       if (downloadSpeed != null) 'download_speed': downloadSpeed,
+      if (uploadSpeed != null) 'upload_speed': uploadSpeed,
       if (connections != null) 'connections': connections,
       if (split != null) 'split': split,
       if (pieceLength != null) 'piece_length': pieceLength,
@@ -1159,6 +1204,7 @@ class DownloadEntriesCompanion extends UpdateCompanion<DownloadEntity> {
     Value<int>? totalLength,
     Value<int>? completedLength,
     Value<int>? downloadSpeed,
+    Value<int>? uploadSpeed,
     Value<int>? connections,
     Value<int>? split,
     Value<int>? pieceLength,
@@ -1186,6 +1232,7 @@ class DownloadEntriesCompanion extends UpdateCompanion<DownloadEntity> {
       totalLength: totalLength ?? this.totalLength,
       completedLength: completedLength ?? this.completedLength,
       downloadSpeed: downloadSpeed ?? this.downloadSpeed,
+      uploadSpeed: uploadSpeed ?? this.uploadSpeed,
       connections: connections ?? this.connections,
       split: split ?? this.split,
       pieceLength: pieceLength ?? this.pieceLength,
@@ -1240,6 +1287,9 @@ class DownloadEntriesCompanion extends UpdateCompanion<DownloadEntity> {
     }
     if (downloadSpeed.present) {
       map['download_speed'] = Variable<int>(downloadSpeed.value);
+    }
+    if (uploadSpeed.present) {
+      map['upload_speed'] = Variable<int>(uploadSpeed.value);
     }
     if (connections.present) {
       map['connections'] = Variable<int>(connections.value);
@@ -1298,6 +1348,7 @@ class DownloadEntriesCompanion extends UpdateCompanion<DownloadEntity> {
           ..write('totalLength: $totalLength, ')
           ..write('completedLength: $completedLength, ')
           ..write('downloadSpeed: $downloadSpeed, ')
+          ..write('uploadSpeed: $uploadSpeed, ')
           ..write('connections: $connections, ')
           ..write('split: $split, ')
           ..write('pieceLength: $pieceLength, ')
@@ -1555,6 +1606,7 @@ typedef $$DownloadEntriesTableCreateCompanionBuilder =
       Value<int> totalLength,
       Value<int> completedLength,
       Value<int> downloadSpeed,
+      Value<int> uploadSpeed,
       Value<int> connections,
       Value<int> split,
       Value<int> pieceLength,
@@ -1583,6 +1635,7 @@ typedef $$DownloadEntriesTableUpdateCompanionBuilder =
       Value<int> totalLength,
       Value<int> completedLength,
       Value<int> downloadSpeed,
+      Value<int> uploadSpeed,
       Value<int> connections,
       Value<int> split,
       Value<int> pieceLength,
@@ -1664,6 +1717,11 @@ class $$DownloadEntriesTableFilterComposer
 
   ColumnFilters<int> get downloadSpeed => $composableBuilder(
     column: $table.downloadSpeed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get uploadSpeed => $composableBuilder(
+    column: $table.uploadSpeed,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1797,6 +1855,11 @@ class $$DownloadEntriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get uploadSpeed => $composableBuilder(
+    column: $table.uploadSpeed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get connections => $composableBuilder(
     column: $table.connections,
     builder: (column) => ColumnOrderings(column),
@@ -1915,6 +1978,11 @@ class $$DownloadEntriesTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get uploadSpeed => $composableBuilder(
+    column: $table.uploadSpeed,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<int> get connections => $composableBuilder(
     column: $table.connections,
     builder: (column) => column,
@@ -2011,6 +2079,7 @@ class $$DownloadEntriesTableTableManager
                 Value<int> totalLength = const Value.absent(),
                 Value<int> completedLength = const Value.absent(),
                 Value<int> downloadSpeed = const Value.absent(),
+                Value<int> uploadSpeed = const Value.absent(),
                 Value<int> connections = const Value.absent(),
                 Value<int> split = const Value.absent(),
                 Value<int> pieceLength = const Value.absent(),
@@ -2037,6 +2106,7 @@ class $$DownloadEntriesTableTableManager
                 totalLength: totalLength,
                 completedLength: completedLength,
                 downloadSpeed: downloadSpeed,
+                uploadSpeed: uploadSpeed,
                 connections: connections,
                 split: split,
                 pieceLength: pieceLength,
@@ -2065,6 +2135,7 @@ class $$DownloadEntriesTableTableManager
                 Value<int> totalLength = const Value.absent(),
                 Value<int> completedLength = const Value.absent(),
                 Value<int> downloadSpeed = const Value.absent(),
+                Value<int> uploadSpeed = const Value.absent(),
                 Value<int> connections = const Value.absent(),
                 Value<int> split = const Value.absent(),
                 Value<int> pieceLength = const Value.absent(),
@@ -2091,6 +2162,7 @@ class $$DownloadEntriesTableTableManager
                 totalLength: totalLength,
                 completedLength: completedLength,
                 downloadSpeed: downloadSpeed,
+                uploadSpeed: uploadSpeed,
                 connections: connections,
                 split: split,
                 pieceLength: pieceLength,

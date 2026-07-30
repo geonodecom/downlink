@@ -277,7 +277,12 @@ class DownloadRepository {
         totalLength: Value(totalLength),
         completedLength: Value(completedLength),
         downloadSpeed: Value(status.downloadSpeed),
-        connections: Value(status.connections),
+        uploadSpeed: Value(status.uploadSpeed),
+        connections: Value(
+          status.numPeers > status.connections
+              ? status.numPeers
+              : status.connections,
+        ),
         pieceLength: Value(status.pieceLength),
         numPieces: Value(status.numPieces),
         bitfield: Value(status.bitfield),
@@ -359,18 +364,18 @@ class DownloadRepository {
     });
   }
 
-  Stream<GeonodeSettings> watchSettings() async* {
+  Stream<DownlinkSettings> watchSettings() async* {
     await ensureSettings();
     yield* _db.select(_db.appSettings).watch().map(_settingsFromRows);
   }
 
-  Future<GeonodeSettings> getSettings() async {
+  Future<DownlinkSettings> getSettings() async {
     await ensureSettings();
     final rows = await _db.select(_db.appSettings).get();
     return _settingsFromRows(rows);
   }
 
-  Future<void> saveSettings(GeonodeSettings settings) async {
+  Future<void> saveSettings(DownlinkSettings settings) async {
     await _db.batch((batch) {
       batch.insertAllOnConflictUpdate(_db.appSettings, [
         AppSettingsCompanion.insert(
@@ -429,6 +434,26 @@ class DownloadRepository {
           key: 'tiktok_cookies_from_browser',
           value: settings.tiktokCookiesFromBrowser,
         ),
+        AppSettingsCompanion.insert(
+          key: 'skipped_update_version',
+          value: settings.skippedUpdateVersion,
+        ),
+        AppSettingsCompanion.insert(
+          key: 'last_update_check_at',
+          value: settings.lastUpdateCheckAt?.toIso8601String() ?? '',
+        ),
+        AppSettingsCompanion.insert(
+          key: 'torrent_seed_mode',
+          value: settings.torrentSeedMode,
+        ),
+        AppSettingsCompanion.insert(
+          key: 'torrent_seed_ratio',
+          value: settings.torrentSeedRatio.toString(),
+        ),
+        AppSettingsCompanion.insert(
+          key: 'torrent_seed_time_minutes',
+          value: settings.torrentSeedTimeMinutes.toString(),
+        ),
       ]);
     });
   }
@@ -438,7 +463,7 @@ class DownloadRepository {
     if (count.isNotEmpty) return;
     final downloads = await getDownloadsDirectory();
     await saveSettings(
-      GeonodeSettings(
+      DownlinkSettings(
         downloadDirectory: downloads?.path ?? defaultDownloadsFallback(),
         maxActiveDownloads: 1,
         defaultSplit: 16,
@@ -453,6 +478,11 @@ class DownloadRepository {
         instagramCookiesFromBrowser: '',
         tiktokCookiesPath: '',
         tiktokCookiesFromBrowser: '',
+        skippedUpdateVersion: '',
+        lastUpdateCheckAt: null,
+        torrentSeedMode: 'stop',
+        torrentSeedRatio: 1.0,
+        torrentSeedTimeMinutes: 60,
       ),
     );
   }
@@ -463,9 +493,9 @@ class DownloadRepository {
         .map((status) => status.name);
   }
 
-  GeonodeSettings _settingsFromRows(List<SettingEntity> rows) {
+  DownlinkSettings _settingsFromRows(List<SettingEntity> rows) {
     final values = {for (final row in rows) row.key: row.value};
-    return GeonodeSettings(
+    return DownlinkSettings(
       downloadDirectory: values['download_directory'] ?? '',
       maxActiveDownloads:
           int.tryParse(values['max_active_downloads'] ?? '') ?? 1,
@@ -483,7 +513,19 @@ class DownloadRepository {
           values['instagram_cookies_from_browser'] ?? '',
       tiktokCookiesPath: values['tiktok_cookies_path'] ?? '',
       tiktokCookiesFromBrowser: values['tiktok_cookies_from_browser'] ?? '',
+      skippedUpdateVersion: values['skipped_update_version'] ?? '',
+      lastUpdateCheckAt: _parseDateTime(values['last_update_check_at']),
+      torrentSeedMode: values['torrent_seed_mode'] ?? 'stop',
+      torrentSeedRatio:
+          double.tryParse(values['torrent_seed_ratio'] ?? '') ?? 1.0,
+      torrentSeedTimeMinutes:
+          int.tryParse(values['torrent_seed_time_minutes'] ?? '') ?? 60,
     );
+  }
+
+  DateTime? _parseDateTime(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    return DateTime.tryParse(raw);
   }
 }
 

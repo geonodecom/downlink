@@ -49,6 +49,7 @@ class Aria2Status {
     required this.totalLength,
     required this.completedLength,
     required this.downloadSpeed,
+    this.uploadSpeed = 0,
     required this.connections,
     required this.pieceLength,
     required this.numPieces,
@@ -56,6 +57,8 @@ class Aria2Status {
     required this.errorCode,
     required this.errorMessage,
     required this.files,
+    this.numSeeders = 0,
+    this.numPeers = 0,
   });
 
   final String gid;
@@ -63,6 +66,7 @@ class Aria2Status {
   final int totalLength;
   final int completedLength;
   final int downloadSpeed;
+  final int uploadSpeed;
   final int connections;
   final int pieceLength;
   final int numPieces;
@@ -70,16 +74,32 @@ class Aria2Status {
   final int? errorCode;
   final String? errorMessage;
   final List<Aria2File> files;
+  final int numSeeders;
+  final int numPeers;
+
+  bool get isSeeding {
+    return status == 'active' &&
+        totalLength > 0 &&
+        completedLength >= totalLength &&
+        uploadSpeed > 0;
+  }
 
   String? get fileName {
     if (files.isEmpty || files.first.path.isEmpty) return null;
     final path = files.first.path.trim();
     if (path.isEmpty) return null;
+    // Android reports a MediaStore content URI once a file is published; its
+    // last segment is a row id, not a name, so keep the stored name instead.
+    if (path.startsWith('content:')) return null;
     // Handle both Windows (\) and POSIX (/) separators from aria2 / yt-dlp.
     final normalized = path.replaceAll('\\', '/');
     final parts = normalized.split('/');
     final base = parts.isEmpty ? path : parts.last;
-    return base.isEmpty ? null : base;
+    if (base.isEmpty) return null;
+    // Android temp part files use `{gid}.part`; never promote those to titles.
+    final lower = base.toLowerCase();
+    if (lower.endsWith('.part') || lower.endsWith('.ytdl')) return null;
+    return base;
   }
 
   String? get sourceUrl {
@@ -95,6 +115,7 @@ class Aria2Status {
       totalLength: _parseInt(json['totalLength']),
       completedLength: _parseInt(json['completedLength']),
       downloadSpeed: _parseInt(json['downloadSpeed']),
+      uploadSpeed: _parseInt(json['uploadSpeed']),
       connections: _parseInt(json['connections']),
       pieceLength: _parseInt(json['pieceLength']),
       numPieces: _parseInt(json['numPieces']),
@@ -107,6 +128,8 @@ class Aria2Status {
                 .map((item) => Aria2File.fromJson(item.cast<String, Object?>()))
                 .toList()
           : const [],
+      numSeeders: _parseInt(json['numSeeders']),
+      numPeers: _parseInt(json['numPeers']),
     );
   }
 

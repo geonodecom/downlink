@@ -1,9 +1,9 @@
-# Uninstall Geonode Download Manager Windows install and native messaging registration.
+# Uninstall Downlink Windows install and native messaging registration.
 $ErrorActionPreference = "Stop"
 
-$InstallDir = Join-Path $env:LOCALAPPDATA "geonode-download-manager"
-$NativeHostName = "com.geonode.geonode_download_manager"
-$ShortcutPath = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Geonode Download Manager.lnk"
+$InstallDir = Join-Path $env:LOCALAPPDATA "downlink"
+$NativeHostName = "com.geonode.downlink"
+$ShortcutPath = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Downlink.lnk"
 
 $RegistryKeys = @(
   "HKCU:\Software\Google\Chrome\NativeMessagingHosts\$NativeHostName",
@@ -29,7 +29,7 @@ if (Test-Path $InstallDir) {
   Write-Host "Removed $InstallDir"
 }
 
-$Endpoint = Join-Path $env:LOCALAPPDATA "geonode-download-manager\extension-endpoint.json"
+$Endpoint = Join-Path $env:LOCALAPPDATA "downlink\extension-endpoint.json"
 if (Test-Path $Endpoint) {
   Remove-Item -Force $Endpoint -ErrorAction SilentlyContinue
 }

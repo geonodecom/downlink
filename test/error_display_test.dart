@@ -1,5 +1,5 @@
-import 'package:geonode_download_manager/src/data/app_database.dart';
-import 'package:geonode_download_manager/src/utils/error_display.dart';
+import 'package:downlink/src/data/app_database.dart';
+import 'package:downlink/src/utils/error_display.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -70,6 +70,17 @@ void main() {
         'File not found',
       );
     });
+    test('maps banned client tracker messages', () {
+      expect(
+        friendlyErrorSummary(
+          _fakeDownload(
+            error:
+                'Tracker returned failure reason: banned client',
+          ),
+        ),
+        contains('banned client'),
+      );
+    });
   });
 }
 
@@ -89,6 +100,7 @@ DownloadEntity _fakeDownload({
     totalLength: 0,
     completedLength: 0,
     downloadSpeed: 0,
+    uploadSpeed: 0,
     connections: 0,
     split: 16,
     pieceLength: 0,

@@ -12,11 +12,11 @@ class AndroidDownloadEngine implements DownloadEngine {
     EventChannel? eventChannel,
   }) : _methods =
            methodChannel ??
-           const MethodChannel('com.geonode.geonode_download_manager/engine'),
+           const MethodChannel('com.geonode.downlink/engine'),
        _events =
            eventChannel ??
            const EventChannel(
-             'com.geonode.geonode_download_manager/engine_events',
+             'com.geonode.downlink/engine_events',
            );
 
   final MethodChannel _methods;
@@ -80,6 +80,7 @@ class AndroidDownloadEngine implements DownloadEngine {
       'fileName': fileName,
       'headers': headers,
       'position': position,
+      'options': optionsJson ?? const <String, Object?>{},
     });
     if (gid == null || gid.isEmpty) {
       throw StateError('Android engine did not return a task id');

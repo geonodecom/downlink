@@ -76,7 +76,7 @@ let cachedSettings = {
 
 function debugLog(...args) {
   if (cachedSettings.debugLogging) {
-    console.log("[geonode]", ...args);
+    console.log("[downlink]", ...args);
   }
 }
 

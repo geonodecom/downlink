@@ -12,6 +12,7 @@ import '../engine/download_engine.dart';
 import '../facebook/facebook_models.dart';
 import '../instagram/instagram_models.dart';
 import '../tiktok/tiktok_models.dart';
+import '../torrent/torrent_models.dart';
 import '../ytdlp/ytdlp_models.dart';
 import 'diagnostics.dart';
 import 'download_probe.dart';
@@ -212,7 +213,7 @@ class DownloadService {
       await refresh();
     } catch (error) {
       _diagnostics?.error('Refresh failed: $error');
-      stderr.writeln('[geonode] refresh failed: $error');
+      stderr.writeln('[downlink] refresh failed: $error');
     }
   }
 
@@ -288,12 +289,12 @@ class DownloadService {
     try {
       await _engine.remove(status.gid);
       stderr.writeln(
-        '[geonode] removed duplicate engine queue entry ${status.gid} for ${existing.url}',
+        '[downlink] removed duplicate engine queue entry ${status.gid} for ${existing.url}',
       );
     } catch (error) {
       _diagnostics?.error('Failed to remove duplicate ${status.gid}: $error');
       stderr.writeln(
-        '[geonode] failed to remove duplicate engine queue entry ${status.gid}: $error',
+        '[downlink] failed to remove duplicate engine queue entry ${status.gid}: $error',
       );
     }
   }
@@ -342,13 +343,13 @@ class DownloadService {
         optionsJson: _optionsFor(entity),
       );
       _diagnostics?.info('Download queued: ${entity.url} → gid $gid');
-      stderr.writeln('[geonode] queued ${entity.url} as engine gid $gid');
+      stderr.writeln('[downlink] queued ${entity.url} as engine gid $gid');
       await _repository.attachGid(entity.id, gid);
       final status = await _engine.tellStatus(gid);
       await _repository.updateFromAria2(status);
     } catch (error) {
       _diagnostics?.error('Failed to add ${entity.url}: $error');
-      stderr.writeln('[geonode] failed to add ${entity.url}: $error');
+      stderr.writeln('[downlink] failed to add ${entity.url}: $error');
       final aria2Code = error is Aria2Exception ? error.code : null;
       await _repository.updateStatus(
         entity.id,
@@ -397,12 +398,16 @@ class DownloadService {
         kind == DownloadUrlKind.instagram ||
         kind == DownloadUrlKind.facebook ||
         kind == DownloadUrlKind.youtube ||
-        kind == DownloadUrlKind.youtubePlaylist;
+        kind == DownloadUrlKind.youtubePlaylist ||
+        kind == DownloadUrlKind.magnet ||
+        kind == DownloadUrlKind.torrent;
     if (!needsOptions) return;
     if (isExtractorDownloadOptions(entity.optionsJson)) return;
     throw StateError(
-      'This URL needs format selection before download. '
-      'Use Add Download → Choose format.',
+      kind == DownloadUrlKind.magnet || kind == DownloadUrlKind.torrent
+          ? 'This magnet/torrent needs options before download. Use Add Download.'
+          : 'This URL needs format selection before download. '
+              'Use Add Download → Choose format.',
     );
   }
 
@@ -411,7 +416,9 @@ class DownloadService {
     if (kind == YoutubeDownloadOptions.kind ||
         kind == FacebookDownloadOptions.kind ||
         kind == InstagramDownloadOptions.kind ||
-        kind == TikTokDownloadOptions.kind) {
+        kind == TikTokDownloadOptions.kind ||
+        kind == TorrentDownloadOptions.kindMagnet ||
+        kind == TorrentDownloadOptions.kindTorrent) {
       return false;
     }
     // Never probe extractor site pages as if they were direct files.
@@ -466,6 +473,6 @@ class DeleteDownloadedFilesException implements Exception {
 
   @override
   String toString() {
-    return 'Removed from Geonode Download Manager, but could not delete downloaded files: $cause';
+    return 'Removed from Downlink, but could not delete downloaded files: $cause';
   }
 }

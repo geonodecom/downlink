@@ -14,7 +14,7 @@ Future<String> youtubeToolsUnavailableMessage() async {
   final bundled = await desktopYoutubeToolsReady();
   if (!bundled && !kDebugMode) {
     return 'Bundled YouTube tools are missing from this install. '
-        'Reinstall GeoNode Download Manager from an official release package.';
+        'Reinstall Downlink from an official release package.';
   }
 
   if (kDebugMode) {

@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:geonode_download_manager/src/facebook/facebook_models.dart';
-import 'package:geonode_download_manager/src/tiktok/tiktok_metadata_client.dart';
-import 'package:geonode_download_manager/src/tiktok/tiktok_models.dart';
-import 'package:geonode_download_manager/src/ytdlp/ytdlp_client.dart';
+import 'package:downlink/src/facebook/facebook_models.dart';
+import 'package:downlink/src/tiktok/tiktok_metadata_client.dart';
+import 'package:downlink/src/tiktok/tiktok_models.dart';
+import 'package:downlink/src/ytdlp/ytdlp_client.dart';
 
 void main() {
   group('TikTokDownloadOptions', () {

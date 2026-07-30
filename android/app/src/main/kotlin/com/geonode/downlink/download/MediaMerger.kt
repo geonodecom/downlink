@@ -1,4 +1,4 @@
-package com.geonode.geonode_download_manager.download
+package com.geonode.downlink.download
 
 import android.media.MediaCodec
 import android.media.MediaExtractor

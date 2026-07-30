@@ -1,14 +1,14 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:geonode_download_manager/src/extension/extension_socket.dart';
-import 'package:geonode_download_manager/src/native_host/app_client.dart';
+import 'package:downlink/src/extension/extension_socket.dart';
+import 'package:downlink/src/native_host/app_client.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
 void main() {
   test(
-    'automatic capture does not launch Geonode Download Manager when the app socket is absent',
+    'automatic capture does not launch Downlink when the app socket is absent',
     () async {
       final fixture = await _launchFixture();
       final client = NativeHostAppClient(
@@ -32,7 +32,7 @@ void main() {
     },
   );
 
-  test('user capture may launch Geonode Download Manager when the app socket is absent', () async {
+  test('user capture may launch Downlink when the app socket is absent', () async {
     final fixture = await _launchFixture();
     final client = NativeHostAppClient(
       endpoint: fixture.endpoint,
@@ -56,16 +56,16 @@ void main() {
 }
 
 Future<_LaunchFixture> _launchFixture() async {
-  final dir = await Directory.systemTemp.createTemp('geonode-host-test-');
+  final dir = await Directory.systemTemp.createTemp('downlink-host-test-');
   final markerPath = p.join(dir.path, 'launched');
   late final String appPath;
   if (Platform.isWindows) {
-    appPath = p.join(dir.path, 'geonode-download-manager.cmd');
+    appPath = p.join(dir.path, 'downlink.cmd');
     await File(appPath).writeAsString(
       '@echo launched> "$markerPath"\r\n',
     );
   } else {
-    appPath = p.join(dir.path, 'geonode-download-manager');
+    appPath = p.join(dir.path, 'downlink');
     await File(appPath).writeAsString(
       '#!/bin/sh\nprintf launched > "$markerPath"\n',
     );

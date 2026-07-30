@@ -1,4 +1,4 @@
-package com.geonode.geonode_download_manager.download
+package com.geonode.downlink.download
 
 import android.content.Context
 import org.json.JSONArray
@@ -63,6 +63,7 @@ class DownloadStore(context: Context) {
                     .put("totalLength", task.totalLength)
                     .put("completedLength", task.completedLength)
                     .put("downloadSpeed", task.downloadSpeed)
+                    .put("uploadSpeed", task.uploadSpeed)
                     .put("connections", task.connections)
                     .put("pieceLength", task.pieceLength)
                     .put("numPieces", task.numPieces)
@@ -72,7 +73,8 @@ class DownloadStore(context: Context) {
                     .put("partPath", task.partPath)
                     .put("queuePosition", task.queuePosition)
                     .put("createdAt", task.createdAt)
-                    .put("updatedAt", task.updatedAt),
+                    .put("updatedAt", task.updatedAt)
+                    .put("isTorrent", task.isTorrent),
             )
         }
         prefs.edit().putString(KEY_TASKS, array.toString()).apply()
@@ -101,6 +103,7 @@ class DownloadStore(context: Context) {
                 totalLength = obj.optLong("totalLength", 0),
                 completedLength = obj.optLong("completedLength", 0),
                 downloadSpeed = obj.optLong("downloadSpeed", 0),
+                uploadSpeed = obj.optLong("uploadSpeed", 0),
                 connections = obj.optInt("connections", 0),
                 pieceLength = obj.optLong("pieceLength", 0),
                 numPieces = obj.optInt("numPieces", 0),
@@ -111,11 +114,13 @@ class DownloadStore(context: Context) {
                 queuePosition = obj.optInt("queuePosition", 0),
                 createdAt = obj.optLong("createdAt", System.currentTimeMillis()),
                 updatedAt = obj.optLong("updatedAt", System.currentTimeMillis()),
+                isTorrent = obj.optBoolean("isTorrent", false),
             )
             // Incomplete actives become waiting so they can be resumed after process death.
             if (task.status == "active") {
                 task.status = "waiting"
                 task.downloadSpeed = 0
+                task.uploadSpeed = 0
                 task.connections = 0
             }
             tasks[task.gid] = task
@@ -123,7 +128,7 @@ class DownloadStore(context: Context) {
     }
 
     companion object {
-        private const val PREFS = "geonode_download_engine"
+        private const val PREFS = "downlink_download_engine"
         private const val KEY_TASKS = "tasks"
     }
 }

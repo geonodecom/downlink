@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import '../aria2/aria2_models.dart';
 import '../aria2/aria2_process_manager.dart';
 import '../services/diagnostics.dart';
+import '../torrent/torrent_models.dart';
 import 'download_engine.dart';
 
 /// Desktop [DownloadEngine] backed by a local aria2 process.
@@ -51,7 +52,39 @@ class Aria2DownloadEngine implements DownloadEngine {
     Map<String, String> headers = const {},
     int? position,
     Map<String, Object?>? optionsJson,
-  }) {
+  }) async {
+    final torrent = torrentOptionsFromMap(optionsJson);
+    final seedOptions = torrent?.toAria2SeedOptions() ?? const <String, String>{};
+
+    if (torrent != null && torrent.isTorrentFile) {
+      final path = torrent.torrentPath.trim().isNotEmpty
+          ? torrent.torrentPath.trim()
+          : url;
+      final file = File(path);
+      if (!await file.exists()) {
+        throw StateError('Torrent file not found: $path');
+      }
+      final bytes = await file.readAsBytes();
+      return _processManager.client().addTorrent(
+        torrentBytes: bytes,
+        directory: directory,
+        position: position,
+        extraOptions: seedOptions,
+      );
+    }
+
+    if (torrent != null && torrent.isMagnet) {
+      return _processManager.client().addUri(
+        url: url,
+        directory: directory,
+        split: 1,
+        fileName: null,
+        headers: const {},
+        position: position,
+        extraOptions: seedOptions,
+      );
+    }
+
     return _processManager.client().addUri(
       url: url,
       directory: directory,

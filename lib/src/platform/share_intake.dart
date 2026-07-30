@@ -9,7 +9,7 @@ typedef ShareUrlHandler = void Function(DownloadCapture capture);
 /// Listens for Android share/view intents carrying HTTP(S) URLs.
 class ShareIntake {
   static const _channel = MethodChannel(
-    'com.geonode.geonode_download_manager/share',
+    'com.geonode.downlink/share',
   );
 
   ShareUrlHandler? _onCapture;
@@ -39,7 +39,9 @@ class ShareIntake {
 
   void _emit(String url) {
     final trimmed = url.trim();
-    if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+    if (!trimmed.startsWith('http://') &&
+        !trimmed.startsWith('https://') &&
+        !trimmed.startsWith('magnet:?')) {
       return;
     }
     _onCapture?.call(

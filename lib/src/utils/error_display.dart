@@ -42,7 +42,17 @@ String? aria2ErrorLabel(int? errorCode) {
 
 String? friendlyErrorSummary(DownloadEntity download) {
   final raw = download.error?.trim();
-  if (raw != null && raw.isNotEmpty) return raw;
+  if (raw != null && raw.isNotEmpty) {
+    final lower = raw.toLowerCase();
+    if (lower.contains('banned client')) {
+      return 'Tracker rejected this client (banned client). '
+          'Restart Downlink so torrent client identity is refreshed, then retry.';
+    }
+    if (lower.contains('tracker returned failure')) {
+      return 'Tracker rejected the announce. Check your passkey / account, then retry.';
+    }
+    return raw;
+  }
 
   final label = aria2ErrorLabel(download.aria2ErrorCode);
   if (label != null) return label;

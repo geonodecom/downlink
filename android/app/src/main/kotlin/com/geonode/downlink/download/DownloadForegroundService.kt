@@ -1,4 +1,4 @@
-package com.geonode.geonode_download_manager.download
+package com.geonode.downlink.download
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -10,8 +10,8 @@ import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
-import com.geonode.geonode_download_manager.MainActivity
-import com.geonode.geonode_download_manager.R
+import com.geonode.downlink.MainActivity
+import com.geonode.downlink.R
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
@@ -23,12 +23,17 @@ class DownloadForegroundService : Service() {
     private var maxActive = 1
     private var defaultSplit = 4
     private var downloadDirectory = ""
+    private var torrentSession: TorrentSession? = null
 
     override fun onCreate() {
         super.onCreate()
         instance = this
         store = DownloadStore(this)
         createChannel()
+        torrentSession = TorrentSession { task ->
+            store.put(task)
+            updateNotification()
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -56,6 +61,8 @@ class DownloadForegroundService : Service() {
     override fun onDestroy() {
         instance = null
         workers.values.forEach { it.cancel() }
+        torrentSession?.shutdown()
+        torrentSession = null
         executor.shutdownNow()
         super.onDestroy()
     }
@@ -77,7 +84,19 @@ class DownloadForegroundService : Service() {
         fileName: String?,
         headers: Map<String, String>,
         position: Int?,
+        options: Map<String, Any?> = emptyMap(),
     ): String {
+        val kind = options["kind"]?.toString()
+        if (kind == "magnet" || kind == "torrent") {
+            return addTorrentJob(
+                url = url,
+                directory = directory,
+                fileName = fileName,
+                position = position,
+                options = options,
+            )
+        }
+
         val gid = store.nextGid()
         val now = System.currentTimeMillis()
         val resolvedName =
@@ -94,6 +113,7 @@ class DownloadForegroundService : Service() {
             totalLength = 0,
             completedLength = 0,
             downloadSpeed = 0,
+            uploadSpeed = 0,
             connections = 0,
             pieceLength = 0,
             numPieces = 0,
@@ -104,17 +124,104 @@ class DownloadForegroundService : Service() {
             queuePosition = position ?: store.all().size,
             createdAt = now,
             updatedAt = now,
+            isTorrent = false,
         )
         store.put(task)
         fillQueue()
         return gid
     }
 
+    private fun addTorrentJob(
+        url: String,
+        directory: String,
+        fileName: String?,
+        position: Int?,
+        options: Map<String, Any?>,
+    ): String {
+        val session = torrentSession ?: error("Torrent session unavailable")
+        val gid = store.nextGid()
+        val now = System.currentTimeMillis()
+        val kind = options["kind"]?.toString() ?: "magnet"
+        val seedMode = options["seedMode"]?.toString() ?: "stop"
+        val seedRatio = (options["seedRatio"] as? Number)?.toDouble()
+            ?: options["seedRatio"]?.toString()?.toDoubleOrNull()
+            ?: 1.0
+        val seedTimeMinutes = (options["seedTimeMinutes"] as? Number)?.toInt()
+            ?: options["seedTimeMinutes"]?.toString()?.toIntOrNull()
+            ?: 60
+        val torrentPath = options["torrentPath"]?.toString().orEmpty()
+        val resolvedName = fileName?.takeIf { it.isNotBlank() }
+            ?: if (kind == "torrent") {
+                File(torrentPath.ifBlank { url }).nameWithoutExtension
+            } else {
+                "Magnet download"
+            }
+        val task = DownloadTask(
+            gid = gid,
+            url = url,
+            fileName = resolvedName,
+            directory = directory.ifBlank { downloadDirectory },
+            split = 1,
+            headers = emptyMap(),
+            status = "waiting",
+            totalLength = 0,
+            completedLength = 0,
+            downloadSpeed = 0,
+            uploadSpeed = 0,
+            connections = 0,
+            pieceLength = 0,
+            numPieces = 0,
+            bitfield = null,
+            errorMessage = null,
+            contentUri = null,
+            partPath = null,
+            queuePosition = position ?: store.all().size,
+            createdAt = now,
+            updatedAt = now,
+            isTorrent = true,
+        )
+        store.put(task)
+        try {
+            if (kind == "torrent") {
+                session.addTorrentFile(
+                    task = task,
+                    torrentPath = torrentPath.ifBlank { url },
+                    seedMode = seedMode,
+                    seedRatio = seedRatio,
+                    seedTimeMinutes = seedTimeMinutes,
+                )
+            } else {
+                session.addMagnet(
+                    task = task,
+                    seedMode = seedMode,
+                    seedRatio = seedRatio,
+                    seedTimeMinutes = seedTimeMinutes,
+                )
+            }
+            store.put(task)
+        } catch (error: Exception) {
+            task.status = "error"
+            task.errorMessage = error.message
+            task.updatedAt = System.currentTimeMillis()
+            store.put(task)
+            throw error
+        }
+        updateNotification()
+        return gid
+    }
+
     fun pause(gid: String) {
+        if (torrentSession?.has(gid) == true) {
+            torrentSession?.pause(gid)
+            store.get(gid)?.let { store.put(it) }
+            updateNotification()
+            return
+        }
         workers[gid]?.pause()
         store.get(gid)?.let {
             it.status = "paused"
             it.downloadSpeed = 0
+            it.uploadSpeed = 0
             it.connections = 0
             it.updatedAt = System.currentTimeMillis()
             store.put(it)
@@ -123,16 +230,58 @@ class DownloadForegroundService : Service() {
     }
 
     fun unpause(gid: String) {
-        store.get(gid)?.let {
-            it.status = "waiting"
-            it.errorMessage = null
-            it.updatedAt = System.currentTimeMillis()
-            store.put(it)
+        val task = store.get(gid) ?: return
+        if (task.isTorrent) {
+            if (torrentSession?.has(gid) == true) {
+                torrentSession?.resume(gid)
+                store.put(task)
+                updateNotification()
+                return
+            }
+            // After process death the native session is gone — re-add the torrent.
+            try {
+                val options = mapOf(
+                    "kind" to if (task.url.startsWith("magnet:?", ignoreCase = true)) {
+                        "magnet"
+                    } else {
+                        "torrent"
+                    },
+                    "torrentPath" to task.url,
+                    "seedMode" to "stop",
+                    "seedRatio" to 1.0,
+                    "seedTimeMinutes" to 60,
+                )
+                store.remove(gid)
+                addTorrentJob(
+                    url = task.url,
+                    directory = task.directory,
+                    fileName = task.fileName,
+                    position = task.queuePosition,
+                    options = options,
+                )
+            } catch (error: Exception) {
+                task.status = "error"
+                task.errorMessage = error.message
+                task.updatedAt = System.currentTimeMillis()
+                store.put(task)
+            }
+            return
         }
+        task.status = "waiting"
+        task.errorMessage = null
+        task.updatedAt = System.currentTimeMillis()
+        store.put(task)
         fillQueue()
     }
 
     fun remove(gid: String) {
+        if (torrentSession?.has(gid) == true) {
+            torrentSession?.remove(gid)
+            store.remove(gid)
+            fillQueue()
+            updateNotification()
+            return
+        }
         workers[gid]?.cancel()
         workers.remove(gid)
         val task = store.get(gid)
@@ -168,6 +317,11 @@ class DownloadForegroundService : Service() {
     fun resetSession() {
         workers.values.forEach { it.cancel() }
         workers.clear()
+        torrentSession?.shutdown()
+        torrentSession = TorrentSession { task ->
+            store.put(task)
+            updateNotification()
+        }
         for (task in store.all()) {
             task.partPath?.let { File(it).delete() }
         }
@@ -189,6 +343,10 @@ class DownloadForegroundService : Service() {
     }
 
     private fun startTask(task: DownloadTask) {
+        if (task.isTorrent) {
+            // Torrents are started immediately in addTorrentJob.
+            return
+        }
         task.status = "active"
         task.updatedAt = System.currentTimeMillis()
         val partDir = File(cacheDir, "parts")
@@ -261,7 +419,13 @@ class DownloadForegroundService : Service() {
         val active = store.active()
         val text = when {
             active.isEmpty() -> "Idle"
-            active.size == 1 -> "Downloading ${active.first().fileName}"
+            active.size == 1 -> {
+                val task = active.first()
+                val seeding = task.isTorrent &&
+                    task.totalLength > 0 &&
+                    task.completedLength >= task.totalLength
+                if (seeding) "Seeding ${task.fileName}" else "Downloading ${task.fileName}"
+            }
             else -> "Downloading ${active.size} files"
         }
         val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
@@ -276,7 +440,7 @@ class DownloadForegroundService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Geonode Download Manager")
+            .setContentTitle("Downlink")
             .setContentText(text)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentIntent(openIntent)
@@ -319,7 +483,7 @@ class DownloadForegroundService : Service() {
     }
 
     companion object {
-        const val CHANNEL_ID = "geonode_downloads"
+        const val CHANNEL_ID = "downlink_downloads"
         const val NOTIFICATION_ID = 42
         const val ACTION_CONFIGURE = "configure"
         const val ACTION_PAUSE = "pause"

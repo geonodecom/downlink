@@ -4,16 +4,24 @@ import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 
 const _engineChannel = MethodChannel(
-  'com.geonode.geonode_download_manager/engine',
+  'com.geonode.downlink/engine',
 );
 
-/// Opens a file, directory, or content URI with the platform default app.
+/// Opens a file, directory, content URI, or http(s) URL with the platform default app.
 Future<void> openPath(String path) async {
   if (path.startsWith('content:') || Platform.isAndroid) {
     await _engineChannel.invokeMethod<void>('openUri', {'uri': path});
     return;
   }
   if (Platform.isWindows) {
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      await Process.start(
+        'cmd',
+        ['/c', 'start', '', path],
+        mode: ProcessStartMode.detached,
+      );
+      return;
+    }
     await Process.start('explorer', [path], mode: ProcessStartMode.detached);
     return;
   }

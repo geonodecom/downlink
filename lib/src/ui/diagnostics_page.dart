@@ -47,7 +47,7 @@ class DiagnosticsPage extends ConsumerWidget {
             data: (entries) {
               if (entries.isEmpty) {
                 return const Center(
-                  child: Text('No events yet. Events appear as Geonode Download Manager runs.'),
+                  child: Text('No events yet. Events appear as Downlink runs.'),
                 );
               }
               return ListView.builder(
@@ -79,10 +79,10 @@ class _EntryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final (icon, color) = switch (entry.level) {
-      GeonodeLogLevel.debug => (Icons.bug_report, colorScheme.outline),
-      GeonodeLogLevel.info => (Icons.info_outline, colorScheme.primary),
-      GeonodeLogLevel.warn => (Icons.warning_amber, Colors.orange),
-      GeonodeLogLevel.error => (Icons.error_outline, colorScheme.error),
+      DownlinkLogLevel.debug => (Icons.bug_report, colorScheme.outline),
+      DownlinkLogLevel.info => (Icons.info_outline, colorScheme.primary),
+      DownlinkLogLevel.warn => (Icons.warning_amber, Colors.orange),
+      DownlinkLogLevel.error => (Icons.error_outline, colorScheme.error),
     };
     final time = _formatTime(entry.timestamp);
 
@@ -183,7 +183,7 @@ Future<void> _confirmResetSession(
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Engine session reset. Restart Geonode Download Manager to start fresh.',
+            'Engine session reset. Restart Downlink to start fresh.',
           ),
         ),
       );

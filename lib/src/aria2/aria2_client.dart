@@ -17,6 +17,7 @@ class Aria2Client {
     String? fileName,
     Map<String, String> headers = const {},
     int? position,
+    Map<String, String> extraOptions = const {},
   }) async {
     final options = <String, String>{
       'dir': directory,
@@ -25,6 +26,7 @@ class Aria2Client {
       ..._fileNameOption(fileName),
       if (headers.isNotEmpty)
         'header': headers.entries.map((e) => '${e.key}: ${e.value}').join('\n'),
+      ...extraOptions,
     };
     final params = <Object?>[
       [url],
@@ -32,6 +34,26 @@ class Aria2Client {
     ];
     if (position != null) params.add(position);
     return call<String>('aria2.addUri', params);
+  }
+
+  Future<String> addTorrent({
+    required List<int> torrentBytes,
+    required String directory,
+    int? position,
+    Map<String, String> extraOptions = const {},
+  }) async {
+    final options = <String, String>{
+      'dir': directory,
+      ...extraOptions,
+    };
+    final encoded = base64Encode(torrentBytes);
+    final params = <Object?>[
+      encoded,
+      <String>[],
+      options,
+    ];
+    if (position != null) params.add(position);
+    return call<String>('aria2.addTorrent', params);
   }
 
   Future<void> pause(String gid) => callVoid('aria2.pause', [gid]);
@@ -158,6 +180,7 @@ const _statusKeys = [
   'totalLength',
   'completedLength',
   'downloadSpeed',
+  'uploadSpeed',
   'connections',
   'pieceLength',
   'numPieces',
@@ -165,6 +188,8 @@ const _statusKeys = [
   'errorCode',
   'errorMessage',
   'files',
+  'numSeeders',
+  'numPeers',
 ];
 
 Map<String, String> _fileNameOption(String? fileName) {

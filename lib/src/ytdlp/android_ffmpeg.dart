@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 
 const _engineChannel = MethodChannel(
-  'com.geonode.geonode_download_manager/engine',
+  'com.geonode.downlink/engine',
 );
 
 /// Resolves the jniLibs-packaged ffmpeg (`libffmpeg.so`) on Android.

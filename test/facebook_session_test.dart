@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:geonode_download_manager/src/facebook/facebook_cookies.dart';
+import 'package:downlink/src/facebook/facebook_cookies.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:geonode_download_manager/src/facebook/facebook_metadata_client.dart';
+import 'package:downlink/src/facebook/facebook_metadata_client.dart';
 
 void main() {
   group('facebook cookies helpers', () {

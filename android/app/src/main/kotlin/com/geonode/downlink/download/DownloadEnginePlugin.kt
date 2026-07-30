@@ -1,4 +1,4 @@
-package com.geonode.geonode_download_manager.download
+package com.geonode.downlink.download
 
 import android.Manifest
 import android.content.Intent
@@ -25,11 +25,11 @@ class DownloadEnginePlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Eve
         appContext = binding.applicationContext
         methods = MethodChannel(
             binding.binaryMessenger,
-            "com.geonode.geonode_download_manager/engine",
+            "com.geonode.downlink/engine",
         )
         events = EventChannel(
             binding.binaryMessenger,
-            "com.geonode.geonode_download_manager/engine_events",
+            "com.geonode.downlink/engine_events",
         )
         methods.setMethodCallHandler(this)
         events.setStreamHandler(this)
@@ -81,6 +81,10 @@ class DownloadEnginePlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Eve
                 val headers = headersArg.entries.associate {
                     it.key.toString() to it.value.toString()
                 }
+                val optionsArg = call.argument<Map<*, *>>("options") ?: emptyMap<Any, Any>()
+                val options = optionsArg.entries.associate {
+                    it.key.toString() to it.value
+                }
                 requireService().addUri(
                     url = call.argument<String>("url") ?: error("url required"),
                     directory = call.argument<String>("directory") ?: "",
@@ -88,6 +92,7 @@ class DownloadEnginePlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Eve
                     fileName = call.argument<String>("fileName"),
                     headers = headers,
                     position = call.argument<Int>("position"),
+                    options = options,
                 )
             }
             "pause" -> {

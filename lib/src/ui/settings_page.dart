@@ -10,11 +10,13 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../data/app_database.dart';
 import '../platform/bundled_executable.dart';
 import '../platform/executable_finder.dart';
+import '../platform/open_path.dart';
 import '../providers.dart';
 import '../ytdlp/android_ffmpeg.dart';
 import 'widgets/facebook_login_dialog.dart';
 import 'widgets/instagram_login_dialog.dart';
 import 'widgets/tiktok_login_dialog.dart';
+import 'widgets/update_available_dialog.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -47,7 +49,7 @@ class SettingsPage extends ConsumerWidget {
 class _SettingsForm extends ConsumerStatefulWidget {
   const _SettingsForm({required this.settings});
 
-  final GeonodeSettings settings;
+  final DownlinkSettings settings;
 
   @override
   ConsumerState<_SettingsForm> createState() => _SettingsFormState();
@@ -61,6 +63,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
   late final TextEditingController _facebookCookiesPath;
   late final TextEditingController _instagramCookiesPath;
   late final TextEditingController _tiktokCookiesPath;
+  late final TextEditingController _torrentSeedRatio;
   late int _maxActive;
   late int _split;
   late String _themeMode;
@@ -68,6 +71,8 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
   late String _facebookCookiesFromBrowser;
   late String _instagramCookiesFromBrowser;
   late String _tiktokCookiesFromBrowser;
+  late String _torrentSeedMode;
+  late int _torrentSeedTimeMinutes;
   final List<_ValidationMessage> _messages = [];
   var _saving = false;
   var _checkingBundledTools = false;
@@ -78,6 +83,8 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
   var _instagramSessionLoading = true;
   var _tiktokLoggedIn = false;
   var _tiktokSessionLoading = true;
+  var _checkingUpdates = false;
+  String? _updateMessage;
 
   @override
   void initState() {
@@ -92,6 +99,9 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
         TextEditingController(text: widget.settings.instagramCookiesPath);
     _tiktokCookiesPath =
         TextEditingController(text: widget.settings.tiktokCookiesPath);
+    _torrentSeedRatio = TextEditingController(
+      text: widget.settings.torrentSeedRatio.toString(),
+    );
     _maxActive = widget.settings.maxActiveDownloads;
     _split = widget.settings.defaultSplit;
     _themeMode = widget.settings.themeMode;
@@ -99,7 +109,14 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
     _facebookCookiesFromBrowser = widget.settings.facebookCookiesFromBrowser;
     _instagramCookiesFromBrowser = widget.settings.instagramCookiesFromBrowser;
     _tiktokCookiesFromBrowser = widget.settings.tiktokCookiesFromBrowser;
+    _torrentSeedMode = widget.settings.torrentSeedMode;
+    _torrentSeedTimeMinutes = widget.settings.torrentSeedTimeMinutes;
     unawaited(_refreshBundledToolsStatus());
+    if (Platform.isAndroid || Platform.isWindows) {
+      unawaited(
+        ref.read(appUpdateControllerProvider.notifier).loadVersionLabel(),
+      );
+    }
     if (Platform.isAndroid) {
       unawaited(_refreshFacebookSession());
       unawaited(_refreshInstagramSession());
@@ -120,6 +137,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
     _facebookCookiesPath.dispose();
     _instagramCookiesPath.dispose();
     _tiktokCookiesPath.dispose();
+    _torrentSeedRatio.dispose();
     super.dispose();
   }
 
@@ -159,7 +177,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
               labelText: 'aria2 executable override (advanced)',
               hintText: 'Leave empty to use bundled tools or PATH',
               helperText:
-                  'Requires restarting Geonode Download Manager to take effect.',
+                  'Requires restarting Downlink to take effect.',
             ),
           ),
           const SizedBox(height: 12),
@@ -199,7 +217,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
           decoration: const InputDecoration(
             labelText: 'Active downloads',
             helperText:
-                'Requires restarting Geonode Download Manager to take effect.',
+                'Requires restarting Downlink to take effect.',
           ),
           items: const [1, 2, 3, 4, 5]
               .map(
@@ -215,7 +233,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
           decoration: const InputDecoration(
             labelText: 'Default connections',
             helperText:
-                'Requires restarting Geonode Download Manager to take effect.',
+                'Requires restarting Downlink to take effect.',
           ),
           items: const [1, 4, 8, 16, 24, 32]
               .map(
@@ -328,7 +346,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
           const Text(
             'Private / friends-only videos need a Facebook login on this device. '
             'Session cookies can access your account — log out on shared devices. '
-            'Cookies are never sent to Geonode servers.',
+            'Cookies are never sent to Downlink or Geonode servers.',
             style: TextStyle(fontSize: 12),
           ),
         ] else ...[
@@ -418,7 +436,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
             'Private Instagram posts/reels need a login on this device. '
             'Public posts/reels usually work without login. '
             'Session cookies can access your account — log out on shared devices. '
-            'Cookies are never sent to Geonode servers.',
+            'Cookies are never sent to Downlink or Geonode servers.',
             style: TextStyle(fontSize: 12),
           ),
         ] else ...[
@@ -509,7 +527,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
             'Private TikTok videos need a login on this device. '
             'Public single-video links usually work without login. '
             'Session cookies can access your account — log out on shared devices. '
-            'Cookies are never sent to Geonode servers.',
+            'Cookies are never sent to Downlink or Geonode servers.',
             style: TextStyle(fontSize: 12),
           ),
         ] else ...[
@@ -561,6 +579,92 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
           ),
         ],
         const SizedBox(height: 20),
+        _SectionLabel(label: 'Torrents'),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          initialValue: _torrentSeedMode,
+          decoration: const InputDecoration(
+            labelText: 'After download completes',
+            helperText: 'Applies to new magnet and .torrent downloads.',
+          ),
+          items: const [
+            DropdownMenuItem(value: 'stop', child: Text('Stop seeding')),
+            DropdownMenuItem(value: 'ratio', child: Text('Seed until ratio')),
+            DropdownMenuItem(value: 'time', child: Text('Seed for a while')),
+          ],
+          onChanged: (value) =>
+              setState(() => _torrentSeedMode = value ?? 'stop'),
+        ),
+        if (_torrentSeedMode == 'ratio') ...[
+          const SizedBox(height: 12),
+          TextField(
+            controller: _torrentSeedRatio,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'Seed ratio',
+              helperText: 'Stop after uploaded / downloaded reaches this ratio.',
+            ),
+          ),
+        ],
+        if (_torrentSeedMode == 'time') ...[
+          const SizedBox(height: 12),
+          DropdownButtonFormField<int>(
+            initialValue: _torrentSeedTimeMinutes,
+            decoration: const InputDecoration(
+              labelText: 'Seed duration',
+            ),
+            items: const [
+              DropdownMenuItem(value: 15, child: Text('15 minutes')),
+              DropdownMenuItem(value: 30, child: Text('30 minutes')),
+              DropdownMenuItem(value: 60, child: Text('1 hour')),
+              DropdownMenuItem(value: 180, child: Text('3 hours')),
+              DropdownMenuItem(value: 360, child: Text('6 hours')),
+              DropdownMenuItem(value: 1440, child: Text('24 hours')),
+            ],
+            onChanged: (value) =>
+                setState(() => _torrentSeedTimeMinutes = value ?? 60),
+          ),
+        ],
+        if (Platform.isAndroid || Platform.isWindows) ...[
+          const SizedBox(height: 20),
+          _SectionLabel(label: 'Updates'),
+          const SizedBox(height: 8),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('App version'),
+            subtitle: Text(
+              ref.watch(appUpdateControllerProvider).currentVersionLabel ??
+                  'Loading…',
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FilledButton.tonal(
+              onPressed: _checkingUpdates ? null : _checkForUpdates,
+              child: _checkingUpdates
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Check for updates'),
+            ),
+          ),
+          if (_updateMessage != null) ...[
+            const SizedBox(height: 8),
+            Text(_updateMessage!),
+          ],
+        ],
+        const SizedBox(height: 20),
+        _SectionLabel(label: 'About'),
+        const SizedBox(height: 8),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Downlink'),
+          subtitle: const Text('Built by Geonode Labs'),
+          trailing: const Icon(Icons.open_in_new),
+          onTap: _openGeonodeLabs,
+        ),
+        const SizedBox(height: 20),
         _SectionLabel(label: 'Appearance'),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
@@ -603,6 +707,10 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
   Future<void> _pickDirectory() async {
     final path = await getDirectoryPath(initialDirectory: _directory.text);
     if (path != null) _directory.text = path;
+  }
+
+  Future<void> _openGeonodeLabs() async {
+    await openPath('https://geonode.com');
   }
 
   Future<void> _refreshFacebookSession() async {
@@ -773,6 +881,29 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
     }
   }
 
+  Future<void> _checkForUpdates() async {
+    setState(() {
+      _checkingUpdates = true;
+      _updateMessage = null;
+    });
+    final offer = await ref
+        .read(appUpdateControllerProvider.notifier)
+        .checkForUpdate(ignoreSkip: true);
+    if (!mounted) return;
+    setState(() {
+      _checkingUpdates = false;
+      if (offer != null) {
+        _updateMessage = 'Version ${offer.version} is available.';
+      } else {
+        final message = ref.read(appUpdateControllerProvider).message;
+        _updateMessage = message ?? 'You are up to date.';
+      }
+    });
+    if (offer != null && mounted) {
+      await showUpdateAvailableDialog(context);
+    }
+  }
+
   Future<void> _refreshBundledToolsStatus() async {
     setState(() => _checkingBundledTools = true);
 
@@ -855,7 +986,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
         final testFile = File(
           p.join(
             dir.path,
-            '.geonode-write-test-${DateTime.now().microsecondsSinceEpoch}',
+            '.downlink-write-test-${DateTime.now().microsecondsSinceEpoch}',
           ),
         );
         await testFile.writeAsString('ok');
@@ -944,7 +1075,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
       await ref
           .read(downloadRepositoryProvider)
           .saveSettings(
-            GeonodeSettings(
+            DownlinkSettings(
               downloadDirectory: directory,
               maxActiveDownloads: _maxActive,
               defaultSplit: _split,
@@ -963,6 +1094,12 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
               tiktokCookiesPath: isAndroid ? '' : _tiktokCookiesPath.text.trim(),
               tiktokCookiesFromBrowser:
                   isAndroid ? '' : _tiktokCookiesFromBrowser,
+              skippedUpdateVersion: widget.settings.skippedUpdateVersion,
+              lastUpdateCheckAt: widget.settings.lastUpdateCheckAt,
+              torrentSeedMode: _torrentSeedMode,
+              torrentSeedRatio:
+                  double.tryParse(_torrentSeedRatio.text.trim()) ?? 1.0,
+              torrentSeedTimeMinutes: _torrentSeedTimeMinutes,
             ),
           );
     } catch (error) {
@@ -989,7 +1126,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
       _messages.add(
         engineChanged
             ? _ValidationMessage.success(
-                'Saved. Restart Geonode Download Manager to apply download engine changes.',
+                'Saved. Restart Downlink to apply download engine changes.',
               )
             : _ValidationMessage.success('Saved.'),
       );

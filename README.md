@@ -4,23 +4,30 @@
 
 <p align="center">
   <img
-    src="geonode-donwload-manager-windows.png"
-    alt="Geonode Download Manager on Windows showing the Downloads screen"
+    src="downlink-windows.png"
+    alt="Downlink on Windows showing the Downloads screen"
     width="720"
+  />
+</p>
+
+<p align="center">
+  <img
+    src="downlink-android.png"
+    alt="Downlink on Android showing the Downloads screen"
+    width="360"
   />
 </p>
 
 ## Status
 
-Geonode Download Manager is a Flutter app with **Linux**, **Windows**, and **Android**
+Downlink is a Flutter app with **Linux**, **Windows**, and **Android**
 targets. Desktop builds use system `aria2c`. Android uses a native foreground
 service with segmented HTTP Range downloads and publishes completed files to the
 system Downloads collection via MediaStore.
 
 The app focuses on direct HTTP/HTTPS file downloads, YouTube, Facebook, Instagram,
 and TikTok single-video extraction (including private access via session cookies),
-queueing, resume, and useful download details. Torrent downloads are not
-implemented yet; see [Roadmap](#roadmap).
+magnet / `.torrent` downloads, queueing, resume, and useful download details.
 
 ## Features
 
@@ -33,7 +40,7 @@ implemented yet; see [Roadmap](#roadmap).
 - [x] Download details with piece map
 - [x] Desktop system tray integration
 - [x] Chromium extension handoff through a native messaging host (desktop)
-- [x] Android share / open-with intake for direct HTTP(S) URLs
+- [x] Android share / open-with intake for direct HTTP(S) URLs and magnet links
 - [x] YouTube video download with format selection (desktop: yt-dlp + ffmpeg; Android: built-in extractor)
 - [x] YouTube playlists (queue each entry) and common URL styles (watch, Shorts, live, embed, music, youtu.be)
 - [x] Facebook / fb.watch video download (desktop: yt-dlp; Android: progressive CDN extraction + HTTP)
@@ -42,6 +49,7 @@ implemented yet; see [Roadmap](#roadmap).
 - [x] Private Instagram reels/videos via in-app session login (Android WebView) or desktop cookies.txt / browser cookie import
 - [x] TikTok single-video download (desktop: yt-dlp; Android: progressive CDN extraction + HTTP) — slideshow/photo posts, live, and playlists are not supported
 - [x] Private TikTok videos via in-app session login (Android WebView) or desktop cookies.txt / browser cookie import
+- [x] Magnet and `.torrent` downloads (desktop: aria2 BitTorrent; Android: libtorrent4j) — downloads all files; seeding controlled in Settings
 
 ## Roadmap
 
@@ -49,16 +57,17 @@ Planned work (not shipped):
 
 - [ ] YouTube authenticated / private streams and channel pages
 - [ ] More video sites (Dailymotion, …)
-- [ ] Torrent / magnet support
+- [x] Torrent / magnet support
 - [ ] Signed Play Store releases (production keystore in CI)
 - [x] Automated Windows release zip in CI
 - [ ] Automated Linux release artifacts in CI
+- [ ] Per-file torrent selection
 
 ## Requirements
 
 ### End users (release installs)
 
-Install **only Geonode Download Manager**. Official Windows zip releases bundle
+Install **only Downlink**. Official Windows zip releases bundle
 **aria2**, **yt-dlp**, and **ffmpeg**. Android APKs use a native download service
 for HTTP, a built-in YouTube extractor, and bundled **ffmpeg** (`libffmpeg.so`)
 for high-resolution merges — no separate tool installs required.
@@ -128,6 +137,10 @@ TikTok single-video links (`/@user/video/…`, `vm.tiktok.com`, etc.) follow
 the same split: desktop yt-dlp; Android progressive CDN download with Referer
 and session cookies when logged in. Slideshow/photo posts, live streams, and
 playlists are not supported. Private TikTok videos use Settings → TikTok.
+Magnet links and `.torrent` files download all contained files (no per-file
+picker yet). Desktop uses aria2 BitTorrent; Android uses libtorrent4j in the
+foreground service. Seeding (stop / ratio / time) is configured under
+Settings → Torrents.
 On desktop, yt-dlp can also use a Netscape cookies.txt file or
 `--cookies-from-browser` for Facebook, Instagram, and TikTok (separately configured).
 Keep desktop **yt-dlp** on the **nightly** channel for TikTok (`yt-dlp --update-to nightly`,
@@ -195,30 +208,30 @@ Desktop only. Android uses share / view intents instead.
 
 ### Linux
 
-`make install` installs the Geonode Download Manager app, the `geonode-download-manager-host` native messaging bridge,
+`make install` installs the Downlink app, the `downlink-host` native messaging bridge,
 and native host manifests for Google Chrome, Chromium, and Brave.
 
 ### Windows
 
-`tool/windows/install.ps1` installs under `%LOCALAPPDATA%\geonode-download-manager`, copies
-`geonode-download-manager-host.exe`, writes the native messaging manifest, and registers HKCU
+`tool/windows/install.ps1` installs under `%LOCALAPPDATA%\downlink`, copies
+`downlink-host.exe`, writes the native messaging manifest, and registers HKCU
 keys for Chrome, Chromium, Edge, and Brave.
 
 To use the extension during development:
 
-1. Install Geonode Download Manager (`make install` on Linux, or `powershell -File tool/windows/install.ps1` on Windows).
+1. Install Downlink (`make install` on Linux, or `powershell -File tool/windows/install.ps1` on Windows).
 2. Open `chrome://extensions`, `edge://extensions`, or `brave://extensions`.
 3. Enable Developer mode.
 4. Choose **Load unpacked** and select `extensions/chrome`.
 
-The extension adds a **Download with Geonode** link context-menu item. Automatic
+The extension adds a **Download with Downlink** link context-menu item. Automatic
 download capture is off by default and can be enabled from the extension popup.
-Manual captures can launch Geonode Download Manager when needed. Automatic captures only hand off to
-an already-running Geonode Download Manager instance; if Geonode Download Manager is unavailable, the extension falls
+Manual captures can launch Downlink when needed. Automatic captures only hand off to
+an already-running Downlink instance; if Downlink is unavailable, the extension falls
 back to the browser download and shows a notification.
 
 On Windows, the running app publishes a loopback TCP endpoint file at
-`%LOCALAPPDATA%\geonode-download-manager\extension-endpoint.json` for `geonode-download-manager-host`. Linux continues
+`%LOCALAPPDATA%\downlink\extension-endpoint.json` for `downlink-host`. Linux continues
 to use a Unix domain socket under `$XDG_RUNTIME_DIR`.
 
 ## Build
@@ -238,7 +251,7 @@ powershell -File tool/windows/build.ps1
 ```
 
 The release bundle is written to `build/windows/x64/runner/Release/`.
-`build/geonode-download-manager-host.exe` is produced for native messaging.
+`build/downlink-host.exe` is produced for native messaging.
 
 ### Android
 
@@ -270,8 +283,8 @@ keystore before publishing.
 make install
 ```
 
-This builds and installs the release bundle under `~/.local/share/geonode-download-manager`, creates
-`~/.local/bin/geonode-download-manager`, installs the desktop entry and icon, and installs the
+This builds and installs the release bundle under `~/.local/share/downlink`, creates
+`~/.local/bin/downlink`, installs the desktop entry and icon, and installs the
 native messaging host.
 
 If you already ran `make build`, install the existing build without rebuilding:
@@ -292,7 +305,7 @@ make uninstall
 powershell -File tool/windows/install.ps1
 ```
 
-This installs to `%LOCALAPPDATA%\geonode-download-manager`, creates a Start Menu shortcut, and
+This installs to `%LOCALAPPDATA%\downlink`, creates a Start Menu shortcut, and
 registers native messaging hosts for Chrome, Chromium, Edge, and Brave.
 
 To uninstall:
@@ -310,6 +323,21 @@ flutter install -d <android-device-id>
 # or
 adb install build/app/outputs/flutter-apk/app-release.apk
 ```
+
+## Updates
+
+Downlink checks GitHub for new releases on Windows and Android.
+When an update is available, the app can download the official release asset inside
+the app.
+
+- **Android:** After download, the system APK installer opens. You may need to
+  allow installing updates for this app (install unknown apps).
+- **Windows:** In-app updates apply to installs under
+  `%LOCALAPPDATA%\downlink` (see `tool/windows/install.ps1`).
+  The app downloads the release zip, quits, applies files via `apply_update.ps1`,
+  and restarts. Portable or debug builds without that script must update manually
+  from GitHub.
+- **Linux:** No automated update yet; download new builds from GitHub releases.
 
 ## License
 

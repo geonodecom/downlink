@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:geonode_download_manager/src/data/app_database.dart';
-import 'package:geonode_download_manager/src/providers.dart';
-import 'package:geonode_download_manager/src/ui/home_shell.dart';
+import 'package:downlink/src/data/app_database.dart';
+import 'package:downlink/src/providers.dart';
+import 'package:downlink/src/ui/home_shell.dart';
 
 void main() {
   testWidgets('uses bottom navigation on narrow screens', (tester) async {

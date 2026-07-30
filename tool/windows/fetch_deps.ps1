@@ -10,7 +10,7 @@ $Versions = Get-Content -Raw $VersionsFile | ConvertFrom-Json
 $Windows = $Versions.windows
 
 New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null
-$Temp = Join-Path $env:TEMP "geonode-deps-windows"
+$Temp = Join-Path $env:TEMP "downlink-deps-windows"
 if (Test-Path $Temp) { Remove-Item -Recurse -Force $Temp }
 New-Item -ItemType Directory -Force -Path $Temp | Out-Null
 

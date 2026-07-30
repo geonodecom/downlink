@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:geonode_download_manager/src/ytdlp/ytdlp_models.dart';
+import 'package:downlink/src/ytdlp/ytdlp_models.dart';
 
 void main() {
   test('parses yt-dlp metadata and builds selectable formats', () {

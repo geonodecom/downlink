@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:geonode_download_manager/src/ui/widgets/youtube_format_dialog.dart';
-import 'package:geonode_download_manager/src/ytdlp/ytdlp_models.dart';
+import 'package:downlink/src/ui/widgets/youtube_format_dialog.dart';
+import 'package:downlink/src/ytdlp/ytdlp_models.dart';
 
 void main() {
   testWidgets('youtube format dialog renders selectable formats', (tester) async {
