@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Downlink
+Comment=The open source download manager
+Exec=downlink
+Icon=downlink
+Terminal=false
+Categories=Network;FileTransfer;
+StartupWMClass=com.geonode.downlink

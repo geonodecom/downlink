@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:geonode_download_manager/src/aria2/aria2_client.dart';
-import 'package:geonode_download_manager/src/aria2/aria2_models.dart';
+import 'package:downlink/src/aria2/aria2_client.dart';
+import 'package:downlink/src/aria2/aria2_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -97,7 +97,7 @@ void main() {
       split: 16,
       headers: const {
         'Referer': 'https://example.com/',
-        'User-Agent': 'Geonode test',
+        'User-Agent': 'Downlink test',
       },
     );
 
@@ -108,7 +108,7 @@ void main() {
         'dir': '/tmp',
         'split': '16',
         'max-connection-per-server': '16',
-        'header': 'Referer: https://example.com/\nUser-Agent: Geonode test',
+        'header': 'Referer: https://example.com/\nUser-Agent: Downlink test',
       },
     ]);
 

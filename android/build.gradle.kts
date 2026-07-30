@@ -1,3 +1,14 @@
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        // Bump above AGP 9.0's bundled KGP 2.2.10 for Flutter's version check.
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.20")
+    }
+}
+
 allprojects {
     repositories {
         google()

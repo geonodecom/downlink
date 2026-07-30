@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:geonode_download_manager/src/extension/app_extension_bridge.dart';
-import 'package:geonode_download_manager/src/extension/download_capture.dart';
-import 'package:geonode_download_manager/src/extension/extension_socket.dart';
+import 'package:downlink/src/extension/app_extension_bridge.dart';
+import 'package:downlink/src/extension/download_capture.dart';
+import 'package:downlink/src/extension/extension_socket.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
@@ -72,7 +72,7 @@ void main() {
   );
 
   test('windows endpoint file round-trips', () async {
-    final dir = await Directory.systemTemp.createTemp('geonode-endpoint-');
+    final dir = await Directory.systemTemp.createTemp('downlink-endpoint-');
     final path = p.join(dir.path, 'extension-endpoint.json');
     addTearDown(() async {
       if (await dir.exists()) await dir.delete(recursive: true);
@@ -99,7 +99,7 @@ Future<_BridgeHarness> _startBridge({
   required CaptureHandler onCapture,
 }) async {
   if (Platform.isWindows) {
-    final dir = await Directory.systemTemp.createTemp('geonode-bridge-');
+    final dir = await Directory.systemTemp.createTemp('downlink-bridge-');
     final endpointFile = p.join(dir.path, 'extension-endpoint.json');
     final bridge = AppExtensionBridge(
       onShow: onShow,
@@ -137,7 +137,7 @@ Future<_BridgeHarness> _startBridge({
   }
 
   final dir = await Directory.systemTemp.createTemp();
-  final socketPath = p.join(dir.path, 'geonode.sock');
+  final socketPath = p.join(dir.path, 'downlink.sock');
   final bridge = AppExtensionBridge(
     socketPath: socketPath,
     onShow: onShow,

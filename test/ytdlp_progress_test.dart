@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:geonode_download_manager/src/ytdlp/ytdlp_progress.dart';
+import 'package:downlink/src/ytdlp/ytdlp_progress.dart';
 
 void main() {
   test('parses custom yt-dlp progress template', () {

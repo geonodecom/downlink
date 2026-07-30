@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.geonode.geonode_download_manager"
+    namespace = "com.geonode.downlink"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -14,7 +14,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.geonode.geonode_download_manager"
+        applicationId = "com.geonode.downlink"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -49,7 +49,7 @@ flutter {
 dependencies {
     implementation("androidx.core:core-ktx:1.16.0")
     implementation("org.libtorrent4j:libtorrent4j:2.1.0-39")
-    implementation("org.libtorrent4j:libtorrent4j-android-arm64-v8a:2.1.0-39")
-    implementation("org.libtorrent4j:libtorrent4j-android-armeabi-v7a:2.1.0-39")
+    implementation("org.libtorrent4j:libtorrent4j-android-arm64:2.1.0-39")
+    implementation("org.libtorrent4j:libtorrent4j-android-arm:2.1.0-39")
     implementation("org.libtorrent4j:libtorrent4j-android-x86_64:2.1.0-39")
 }

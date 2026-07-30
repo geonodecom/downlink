@@ -1,4 +1,4 @@
-package com.geonode.geonode_download_manager.download
+package com.geonode.downlink.download
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -10,8 +10,8 @@ import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
-import com.geonode.geonode_download_manager.MainActivity
-import com.geonode.geonode_download_manager.R
+import com.geonode.downlink.MainActivity
+import com.geonode.downlink.R
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
@@ -440,7 +440,7 @@ class DownloadForegroundService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Geonode Download Manager")
+            .setContentTitle("Downlink")
             .setContentText(text)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentIntent(openIntent)
@@ -483,7 +483,7 @@ class DownloadForegroundService : Service() {
     }
 
     companion object {
-        const val CHANNEL_ID = "geonode_downloads"
+        const val CHANNEL_ID = "downlink_downloads"
         const val NOTIFICATION_ID = 42
         const val ACTION_CONFIGURE = "configure"
         const val ACTION_PAUSE = "pause"

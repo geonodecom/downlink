@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'providers.dart';
 import 'ui/home_shell.dart';
 
-class GeonodeMaterialApp extends ConsumerWidget {
-  const GeonodeMaterialApp({super.key});
+class DownlinkMaterialApp extends ConsumerWidget {
+  const DownlinkMaterialApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -22,7 +22,7 @@ class GeonodeMaterialApp extends ConsumerWidget {
         );
 
     return MaterialApp(
-      title: 'Geonode Download Manager',
+      title: 'Downlink',
       debugShowCheckedModeBanner: false,
       themeMode: themeMode,
       theme: ThemeData(

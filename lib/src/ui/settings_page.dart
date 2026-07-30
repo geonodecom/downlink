@@ -10,6 +10,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../data/app_database.dart';
 import '../platform/bundled_executable.dart';
 import '../platform/executable_finder.dart';
+import '../platform/open_path.dart';
 import '../providers.dart';
 import '../ytdlp/android_ffmpeg.dart';
 import 'widgets/facebook_login_dialog.dart';
@@ -48,7 +49,7 @@ class SettingsPage extends ConsumerWidget {
 class _SettingsForm extends ConsumerStatefulWidget {
   const _SettingsForm({required this.settings});
 
-  final GeonodeSettings settings;
+  final DownlinkSettings settings;
 
   @override
   ConsumerState<_SettingsForm> createState() => _SettingsFormState();
@@ -176,7 +177,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
               labelText: 'aria2 executable override (advanced)',
               hintText: 'Leave empty to use bundled tools or PATH',
               helperText:
-                  'Requires restarting Geonode Download Manager to take effect.',
+                  'Requires restarting Downlink to take effect.',
             ),
           ),
           const SizedBox(height: 12),
@@ -216,7 +217,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
           decoration: const InputDecoration(
             labelText: 'Active downloads',
             helperText:
-                'Requires restarting Geonode Download Manager to take effect.',
+                'Requires restarting Downlink to take effect.',
           ),
           items: const [1, 2, 3, 4, 5]
               .map(
@@ -232,7 +233,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
           decoration: const InputDecoration(
             labelText: 'Default connections',
             helperText:
-                'Requires restarting Geonode Download Manager to take effect.',
+                'Requires restarting Downlink to take effect.',
           ),
           items: const [1, 4, 8, 16, 24, 32]
               .map(
@@ -345,7 +346,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
           const Text(
             'Private / friends-only videos need a Facebook login on this device. '
             'Session cookies can access your account — log out on shared devices. '
-            'Cookies are never sent to Geonode servers.',
+            'Cookies are never sent to Downlink or Geonode servers.',
             style: TextStyle(fontSize: 12),
           ),
         ] else ...[
@@ -435,7 +436,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
             'Private Instagram posts/reels need a login on this device. '
             'Public posts/reels usually work without login. '
             'Session cookies can access your account — log out on shared devices. '
-            'Cookies are never sent to Geonode servers.',
+            'Cookies are never sent to Downlink or Geonode servers.',
             style: TextStyle(fontSize: 12),
           ),
         ] else ...[
@@ -526,7 +527,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
             'Private TikTok videos need a login on this device. '
             'Public single-video links usually work without login. '
             'Session cookies can access your account — log out on shared devices. '
-            'Cookies are never sent to Geonode servers.',
+            'Cookies are never sent to Downlink or Geonode servers.',
             style: TextStyle(fontSize: 12),
           ),
         ] else ...[
@@ -654,6 +655,16 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
           ],
         ],
         const SizedBox(height: 20),
+        _SectionLabel(label: 'About'),
+        const SizedBox(height: 8),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Downlink'),
+          subtitle: const Text('Built by Geonode Labs'),
+          trailing: const Icon(Icons.open_in_new),
+          onTap: _openGeonodeLabs,
+        ),
+        const SizedBox(height: 20),
         _SectionLabel(label: 'Appearance'),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
@@ -696,6 +707,10 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
   Future<void> _pickDirectory() async {
     final path = await getDirectoryPath(initialDirectory: _directory.text);
     if (path != null) _directory.text = path;
+  }
+
+  Future<void> _openGeonodeLabs() async {
+    await openPath('https://geonode.com');
   }
 
   Future<void> _refreshFacebookSession() async {
@@ -971,7 +986,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
         final testFile = File(
           p.join(
             dir.path,
-            '.geonode-write-test-${DateTime.now().microsecondsSinceEpoch}',
+            '.downlink-write-test-${DateTime.now().microsecondsSinceEpoch}',
           ),
         );
         await testFile.writeAsString('ok');
@@ -1060,7 +1075,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
       await ref
           .read(downloadRepositoryProvider)
           .saveSettings(
-            GeonodeSettings(
+            DownlinkSettings(
               downloadDirectory: directory,
               maxActiveDownloads: _maxActive,
               defaultSplit: _split,
@@ -1111,7 +1126,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
       _messages.add(
         engineChanged
             ? _ValidationMessage.success(
-                'Saved. Restart Geonode Download Manager to apply download engine changes.',
+                'Saved. Restart Downlink to apply download engine changes.',
               )
             : _ValidationMessage.success('Saved.'),
       );

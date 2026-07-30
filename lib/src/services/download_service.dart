@@ -213,7 +213,7 @@ class DownloadService {
       await refresh();
     } catch (error) {
       _diagnostics?.error('Refresh failed: $error');
-      stderr.writeln('[geonode] refresh failed: $error');
+      stderr.writeln('[downlink] refresh failed: $error');
     }
   }
 
@@ -289,12 +289,12 @@ class DownloadService {
     try {
       await _engine.remove(status.gid);
       stderr.writeln(
-        '[geonode] removed duplicate engine queue entry ${status.gid} for ${existing.url}',
+        '[downlink] removed duplicate engine queue entry ${status.gid} for ${existing.url}',
       );
     } catch (error) {
       _diagnostics?.error('Failed to remove duplicate ${status.gid}: $error');
       stderr.writeln(
-        '[geonode] failed to remove duplicate engine queue entry ${status.gid}: $error',
+        '[downlink] failed to remove duplicate engine queue entry ${status.gid}: $error',
       );
     }
   }
@@ -343,13 +343,13 @@ class DownloadService {
         optionsJson: _optionsFor(entity),
       );
       _diagnostics?.info('Download queued: ${entity.url} → gid $gid');
-      stderr.writeln('[geonode] queued ${entity.url} as engine gid $gid');
+      stderr.writeln('[downlink] queued ${entity.url} as engine gid $gid');
       await _repository.attachGid(entity.id, gid);
       final status = await _engine.tellStatus(gid);
       await _repository.updateFromAria2(status);
     } catch (error) {
       _diagnostics?.error('Failed to add ${entity.url}: $error');
-      stderr.writeln('[geonode] failed to add ${entity.url}: $error');
+      stderr.writeln('[downlink] failed to add ${entity.url}: $error');
       final aria2Code = error is Aria2Exception ? error.code : null;
       await _repository.updateStatus(
         entity.id,
@@ -473,6 +473,6 @@ class DeleteDownloadedFilesException implements Exception {
 
   @override
   String toString() {
-    return 'Removed from Geonode Download Manager, but could not delete downloaded files: $cause';
+    return 'Removed from Downlink, but could not delete downloaded files: $cause';
   }
 }

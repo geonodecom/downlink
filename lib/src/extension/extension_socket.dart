@@ -46,26 +46,26 @@ String extensionSocketPath({Map<String, String>? environment}) {
   final env = environment ?? Platform.environment;
   final runtimeDir = env['XDG_RUNTIME_DIR'];
   if (runtimeDir != null && runtimeDir.trim().isNotEmpty) {
-    return p.join(runtimeDir, 'geonode-download-manager', 'extension.sock');
+    return p.join(runtimeDir, 'downlink', 'extension.sock');
   }
   final uid = env['UID'] ?? env['USER'] ?? 'user';
-  return p.join('/tmp', 'geonode-download-manager-$uid', 'extension.sock');
+  return p.join('/tmp', 'downlink-$uid', 'extension.sock');
 }
 
 /// Absolute path of the Windows endpoint discovery file.
 ///
 /// Shared by the Flutter app and native host (no path_provider) so both sides
-/// agree: `%LOCALAPPDATA%\geonode-download-manager\extension-endpoint.json`.
+/// agree: `%LOCALAPPDATA%\downlink\extension-endpoint.json`.
 String windowsEndpointFilePath({Map<String, String>? environment}) {
   final env = environment ?? Platform.environment;
-  final override = env['GEONODE_EXTENSION_ENDPOINT'];
+  final override = env['DOWNLINK_EXTENSION_ENDPOINT'];
   if (override != null && override.trim().isNotEmpty) return override;
   final localAppData = env['LOCALAPPDATA'];
   if (localAppData != null && localAppData.trim().isNotEmpty) {
-    return p.join(localAppData, 'geonode-download-manager', 'extension-endpoint.json');
+    return p.join(localAppData, 'downlink', 'extension-endpoint.json');
   }
   final temp = env['TEMP'] ?? env['TMP'] ?? '.';
-  return p.join(temp, 'geonode-download-manager', 'extension-endpoint.json');
+  return p.join(temp, 'downlink', 'extension-endpoint.json');
 }
 
 Future<void> writeWindowsEndpoint(

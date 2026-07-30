@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// A lightweight in-memory diagnostics log for Geonode Download Manager service and aria2 events.
+/// A lightweight in-memory diagnostics log for Downlink service and aria2 events.
 ///
 /// Keeps the last [_maxEvents] entries. Used by the in-app diagnostics panel.
 class DiagnosticsLog {
@@ -28,19 +28,19 @@ class DiagnosticsLog {
   }
 
   void info(String message) {
-    emit(DiagnosticEntry(level: GeonodeLogLevel.info, message: message));
+    emit(DiagnosticEntry(level: DownlinkLogLevel.info, message: message));
   }
 
   void warn(String message) {
-    emit(DiagnosticEntry(level: GeonodeLogLevel.warn, message: message));
+    emit(DiagnosticEntry(level: DownlinkLogLevel.warn, message: message));
   }
 
   void error(String message) {
-    emit(DiagnosticEntry(level: GeonodeLogLevel.error, message: message));
+    emit(DiagnosticEntry(level: DownlinkLogLevel.error, message: message));
   }
 
   void debug(String message) {
-    emit(DiagnosticEntry(level: GeonodeLogLevel.debug, message: message));
+    emit(DiagnosticEntry(level: DownlinkLogLevel.debug, message: message));
   }
 
   void clear() {
@@ -53,13 +53,13 @@ class DiagnosticsLog {
   }
 }
 
-enum GeonodeLogLevel { debug, info, warn, error }
+enum DownlinkLogLevel { debug, info, warn, error }
 
 class DiagnosticEntry {
   DiagnosticEntry({required this.level, required this.message})
     : timestamp = DateTime.now();
 
-  final GeonodeLogLevel level;
+  final DownlinkLogLevel level;
   final String message;
   final DateTime timestamp;
 }

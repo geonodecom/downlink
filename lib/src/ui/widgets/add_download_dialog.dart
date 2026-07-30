@@ -395,7 +395,7 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
       setState(
         () => _error =
-            'Geonode supports HTTP, HTTPS, magnet links, .torrent files, '
+            'Downlink supports HTTP, HTTPS, magnet links, .torrent files, '
             'YouTube, Facebook, Instagram, and TikTok.',
       );
       return;

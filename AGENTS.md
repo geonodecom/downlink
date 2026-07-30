@@ -1,6 +1,6 @@
-# Geonode Download Manager Agent Guide
+# Downlink Agent Guide
 
-Geonode Download Manager is a Flutter download manager for Linux, Windows, and
+Downlink is a Flutter download manager for Linux, Windows, and
 Android. Desktop builds are powered by aria2; Android uses a native foreground
 download service.
 

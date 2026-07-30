@@ -1,9 +1,9 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:geonode_download_manager/src/data/app_database.dart';
-import 'package:geonode_download_manager/src/data/download_repository.dart';
-import 'package:geonode_download_manager/src/services/download_probe.dart';
-import 'package:geonode_download_manager/src/services/download_service.dart';
+import 'package:downlink/src/data/app_database.dart';
+import 'package:downlink/src/data/download_repository.dart';
+import 'package:downlink/src/services/download_probe.dart';
+import 'package:downlink/src/services/download_service.dart';
 
 import 'download_engine_test.dart';
 
@@ -43,7 +43,7 @@ void main() {
 
   test('start and addDownload attach engine gid', () async {
     await repository.saveSettings(
-      const GeonodeSettings(
+      const DownlinkSettings(
         downloadDirectory: '/tmp',
         maxActiveDownloads: 1,
         defaultSplit: 4,
@@ -75,7 +75,7 @@ void main() {
 
   test('addDownload skips probe for youtube options', () async {
     await repository.saveSettings(
-      const GeonodeSettings(
+      const DownlinkSettings(
         downloadDirectory: '/tmp',
         maxActiveDownloads: 1,
         defaultSplit: 4,
@@ -113,7 +113,7 @@ void main() {
 
   test('pause and resume update repository status', () async {
     await repository.saveSettings(
-      const GeonodeSettings(
+      const DownlinkSettings(
         downloadDirectory: '/tmp',
         maxActiveDownloads: 1,
         defaultSplit: 4,
@@ -151,7 +151,7 @@ void main() {
 
   test('resetEngineSession clears fake engine state', () async {
     await repository.saveSettings(
-      const GeonodeSettings(
+      const DownlinkSettings(
         downloadDirectory: '/tmp',
         maxActiveDownloads: 1,
         defaultSplit: 4,

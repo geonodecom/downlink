@@ -21,7 +21,7 @@ Future<void> main() async {
     await windowManager.setPreventClose(true);
     windowManager.waitUntilReadyToShow(
       const WindowOptions(
-        title: 'Geonode Download Manager',
+        title: 'Downlink',
         size: Size(1180, 760),
         minimumSize: Size(920, 620),
         center: true,
@@ -33,17 +33,17 @@ Future<void> main() async {
     );
   }
 
-  runApp(const ProviderScope(child: GeonodeApp()));
+  runApp(const ProviderScope(child: DownlinkApp()));
 }
 
-class GeonodeApp extends ConsumerStatefulWidget {
-  const GeonodeApp({super.key});
+class DownlinkApp extends ConsumerStatefulWidget {
+  const DownlinkApp({super.key});
 
   @override
-  ConsumerState<GeonodeApp> createState() => _GeonodeAppState();
+  ConsumerState<DownlinkApp> createState() => _DownlinkAppState();
 }
 
-class _GeonodeAppState extends ConsumerState<GeonodeApp>
+class _DownlinkAppState extends ConsumerState<DownlinkApp>
     with TrayListener, WindowListener {
   AppExtensionBridge? _extensionBridge;
   final ShareIntake _shareIntake = ShareIntake();
@@ -91,14 +91,14 @@ class _GeonodeAppState extends ConsumerState<GeonodeApp>
         : 'images/tray-icon.png';
     await trayManager.setIcon(icon);
     try {
-      await trayManager.setToolTip('Geonode Download Manager');
+      await trayManager.setToolTip('Downlink');
     } on MissingPluginException {
       // Linux support in tray_manager does not currently implement tooltips.
     }
     await trayManager.setContextMenu(
       Menu(
         items: [
-          MenuItem(key: 'open', label: 'Open Geonode Download Manager'),
+          MenuItem(key: 'open', label: 'Open Downlink'),
           MenuItem(key: 'add', label: 'Add Download'),
           MenuItem.separator(),
           MenuItem(key: 'pause_all', label: 'Pause All'),
@@ -147,7 +147,7 @@ class _GeonodeAppState extends ConsumerState<GeonodeApp>
   Future<void> _requestAndroidNotificationPermission() async {
     try {
       await const MethodChannel(
-        'com.geonode.geonode_download_manager/engine',
+        'com.geonode.downlink/engine',
       ).invokeMethod<void>('requestNotificationPermission');
     } catch (_) {
       // Optional on older Android versions.
@@ -195,5 +195,5 @@ class _GeonodeAppState extends ConsumerState<GeonodeApp>
   }
 
   @override
-  Widget build(BuildContext context) => const GeonodeMaterialApp();
+  Widget build(BuildContext context) => const DownlinkMaterialApp();
 }

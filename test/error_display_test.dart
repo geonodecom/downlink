@@ -1,5 +1,5 @@
-import 'package:geonode_download_manager/src/data/app_database.dart';
-import 'package:geonode_download_manager/src/utils/error_display.dart';
+import 'package:downlink/src/data/app_database.dart';
+import 'package:downlink/src/utils/error_display.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

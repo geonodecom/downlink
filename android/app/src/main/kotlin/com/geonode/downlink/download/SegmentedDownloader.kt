@@ -1,4 +1,4 @@
-package com.geonode.geonode_download_manager.download
+package com.geonode.downlink.download
 
 import java.io.File
 import java.io.RandomAccessFile
@@ -214,7 +214,7 @@ class SegmentedDownloader(
     private fun applyHeaders(connection: HttpURLConnection) {
         val hasUserAgent = task.headers.keys.any { it.equals("User-Agent", ignoreCase = true) }
         if (!hasUserAgent) {
-            connection.setRequestProperty("User-Agent", "GeonodeDownloadManager/0.1")
+            connection.setRequestProperty("User-Agent", "Downlink/0.1")
         }
         for ((key, value) in task.headers) {
             connection.setRequestProperty(key, value)

@@ -1,7 +1,7 @@
 import 'dart:io';
 
-import 'package:geonode_download_manager/src/platform/executable_finder.dart';
-import 'package:geonode_download_manager/src/platform/open_path.dart';
+import 'package:downlink/src/platform/executable_finder.dart';
+import 'package:downlink/src/platform/open_path.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
@@ -16,7 +16,7 @@ void main() {
   });
 
   test('isExecutablePath accepts existing file on this platform', () async {
-    final dir = await Directory.systemTemp.createTemp('geonode-exe-');
+    final dir = await Directory.systemTemp.createTemp('downlink-exe-');
     addTearDown(() async {
       if (await dir.exists()) await dir.delete(recursive: true);
     });

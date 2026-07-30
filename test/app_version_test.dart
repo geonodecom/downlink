@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:geonode_download_manager/src/app_update/app_version.dart';
+import 'package:downlink/src/app_update/app_version.dart';
 
 void main() {
   group('Semver', () {

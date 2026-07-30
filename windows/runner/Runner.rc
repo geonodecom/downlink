@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.geonode" "\0"
-            VALUE "FileDescription", "Geonode Download Manager" "\0"
+            VALUE "CompanyName", "Geonode Labs" "\0"
+            VALUE "FileDescription", "Downlink" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "geonode-download-manager" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.geonode. All rights reserved." "\0"
-            VALUE "OriginalFilename", "geonode-download-manager.exe" "\0"
-            VALUE "ProductName", "Geonode Download Manager" "\0"
+            VALUE "InternalName", "downlink" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 Geonode Labs. All rights reserved." "\0"
+            VALUE "OriginalFilename", "downlink.exe" "\0"
+            VALUE "ProductName", "Downlink" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

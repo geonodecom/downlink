@@ -1,7 +1,7 @@
 import 'dart:io';
 
-import 'package:geonode_download_manager/src/data/download_repository.dart';
-import 'package:geonode_download_manager/src/services/download_probe.dart';
+import 'package:downlink/src/data/download_repository.dart';
+import 'package:downlink/src/services/download_probe.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

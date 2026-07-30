@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
-import 'package:geonode_download_manager/src/aria2/aria2_models.dart';
-import 'package:geonode_download_manager/src/data/app_database.dart';
-import 'package:geonode_download_manager/src/utils/download_display.dart';
-import 'package:geonode_download_manager/src/utils/formatters.dart';
+import 'package:downlink/src/aria2/aria2_models.dart';
+import 'package:downlink/src/data/app_database.dart';
+import 'package:downlink/src/utils/download_display.dart';
+import 'package:downlink/src/utils/formatters.dart';
 
 void main() {
   test('piecesFromBitfield expands aria2 bitfields', () {

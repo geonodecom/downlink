@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:geonode_download_manager/src/tiktok/tiktok_cookies.dart';
-import 'package:geonode_download_manager/src/tiktok/tiktok_session.dart';
+import 'package:downlink/src/tiktok/tiktok_cookies.dart';
+import 'package:downlink/src/tiktok/tiktok_session.dart';
 
 void main() {
   group('tiktok cookies helpers', () {
