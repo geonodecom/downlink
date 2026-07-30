@@ -88,11 +88,18 @@ class Aria2Status {
     if (files.isEmpty || files.first.path.isEmpty) return null;
     final path = files.first.path.trim();
     if (path.isEmpty) return null;
+    // Android reports a MediaStore content URI once a file is published; its
+    // last segment is a row id, not a name, so keep the stored name instead.
+    if (path.startsWith('content:')) return null;
     // Handle both Windows (\) and POSIX (/) separators from aria2 / yt-dlp.
     final normalized = path.replaceAll('\\', '/');
     final parts = normalized.split('/');
     final base = parts.isEmpty ? path : parts.last;
-    return base.isEmpty ? null : base;
+    if (base.isEmpty) return null;
+    // Android temp part files use `{gid}.part`; never promote those to titles.
+    final lower = base.toLowerCase();
+    if (lower.endsWith('.part') || lower.endsWith('.ytdl')) return null;
+    return base;
   }
 
   String? get sourceUrl {

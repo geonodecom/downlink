@@ -1,6 +1,6 @@
 # Third-Party Notices
 
-Geonode Download Manager release builds may bundle the following third-party
+Downlink release builds may bundle the following third-party
 tools in the `bin/` directory (desktop) or as Android `jniLibs` (`libffmpeg.so`):
 
 ## aria2

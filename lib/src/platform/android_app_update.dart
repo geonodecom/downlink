@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 
 class AndroidAppUpdate {
   static const _channel =
-      MethodChannel('com.geonode.geonode_download_manager/app_update');
+      MethodChannel('com.geonode.downlink/app_update');
 
   static bool get isSupported => Platform.isAndroid;
 

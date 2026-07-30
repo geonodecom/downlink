@@ -1,0 +1,7 @@
+{
+  "name": "com.geonode.downlink",
+  "description": "Downlink bridge",
+  "path": "DOWNLINK_HOST_PATH",
+  "type": "stdio",
+  "allowed_origins": ["chrome-extension://jfhajebjecphbdnocjaiomfegdjneikc/"]
+}

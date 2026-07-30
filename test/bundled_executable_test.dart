@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:geonode_download_manager/src/platform/bundled_executable.dart';
+import 'package:downlink/src/platform/bundled_executable.dart';
 import 'package:path/path.dart' as p;
 
 String _toolName(String baseName) {
@@ -14,7 +14,7 @@ void main() {
   });
 
   test('findBundledExecutable returns tool from app bin directory', () async {
-    final root = await Directory.systemTemp.createTemp('geonode-bin-test');
+    final root = await Directory.systemTemp.createTemp('downlink-bin-test');
     addTearDown(() => root.deleteSync(recursive: true));
     final bin = Directory(p.join(root.path, 'bin'))..createSync();
     final toolName = _toolName('yt-dlp');
@@ -28,7 +28,7 @@ void main() {
   });
 
   test('resolveExecutable prefers override then bundled then PATH', () async {
-    final root = await Directory.systemTemp.createTemp('geonode-resolve-test');
+    final root = await Directory.systemTemp.createTemp('downlink-resolve-test');
     addTearDown(() => root.deleteSync(recursive: true));
     final bin = Directory(p.join(root.path, 'bin'))..createSync();
     final bundledName = _toolName('ffmpeg');
@@ -66,7 +66,7 @@ void main() {
   });
 
   test('desktopBundledToolsReady requires aria2 yt-dlp and ffmpeg', () async {
-    final root = await Directory.systemTemp.createTemp('geonode-all-test');
+    final root = await Directory.systemTemp.createTemp('downlink-all-test');
     addTearDown(() => root.deleteSync(recursive: true));
     final bin = Directory(p.join(root.path, 'bin'))..createSync();
     setAppDirectoryOverrideForTesting(root.path);

@@ -1,10 +1,10 @@
 # Project-level configuration.
 cmake_minimum_required(VERSION 3.14)
-project(geonode_download_manager LANGUAGES CXX)
+project(downlink LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
-set(BINARY_NAME "geonode-download-manager")
+set(BINARY_NAME "downlink")
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.
@@ -108,9 +108,9 @@ install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   COMPONENT Runtime)
 
 # Bundled download tools (aria2, yt-dlp, ffmpeg) next to the exe.
-set(GEONODE_DEPS_BIN_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../build/deps/windows-x64/bin")
-if(EXISTS "${GEONODE_DEPS_BIN_DIR}")
-  install(DIRECTORY "${GEONODE_DEPS_BIN_DIR}/"
+set(DOWNLINK_DEPS_BIN_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../build/deps/windows-x64/bin")
+if(EXISTS "${DOWNLINK_DEPS_BIN_DIR}")
+  install(DIRECTORY "${DOWNLINK_DEPS_BIN_DIR}/"
     DESTINATION "${CMAKE_INSTALL_PREFIX}/bin"
     COMPONENT Runtime)
 endif()

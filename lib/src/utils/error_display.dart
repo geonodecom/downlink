@@ -46,7 +46,7 @@ String? friendlyErrorSummary(DownloadEntity download) {
     final lower = raw.toLowerCase();
     if (lower.contains('banned client')) {
       return 'Tracker rejected this client (banned client). '
-          'Restart Geonode so torrent client identity is refreshed, then retry.';
+          'Restart Downlink so torrent client identity is refreshed, then retry.';
     }
     if (lower.contains('tracker returned failure')) {
       return 'Tracker rejected the announce. Check your passkey / account, then retry.';

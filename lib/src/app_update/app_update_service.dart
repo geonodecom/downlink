@@ -79,7 +79,7 @@ class AppUpdateService {
     }
 
     final request = http.Request('GET', Uri.parse(offer.downloadUrl));
-    request.headers['User-Agent'] = 'geonode-download-manager';
+    request.headers['User-Agent'] = 'downlink';
     final response = await _httpClient.send(request);
     if (response.statusCode != 200) {
       throw AppUpdateException(

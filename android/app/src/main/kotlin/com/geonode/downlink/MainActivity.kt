@@ -1,4 +1,4 @@
-package com.geonode.geonode_download_manager
+package com.geonode.downlink
 
 import android.Manifest
 import android.content.Intent
@@ -9,15 +9,15 @@ import android.os.Bundle
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
-import com.geonode.geonode_download_manager.download.DownloadEnginePlugin
+import com.geonode.downlink.download.DownloadEnginePlugin
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
 
 class MainActivity : FlutterActivity() {
-    private val shareChannelName = "com.geonode.geonode_download_manager/share"
-    private val appUpdateChannelName = "com.geonode.geonode_download_manager/app_update"
+    private val shareChannelName = "com.geonode.downlink/share"
+    private val appUpdateChannelName = "com.geonode.downlink/app_update"
     private var shareChannel: MethodChannel? = null
     private var appUpdateChannel: MethodChannel? = null
     private var pendingShareUrl: String? = null

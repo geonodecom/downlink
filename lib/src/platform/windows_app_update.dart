@@ -41,7 +41,7 @@ class WindowsAppUpdate {
         '-ZipPath',
         zip.absolute.path,
         '-ExeName',
-        'geonode-download-manager.exe',
+        'downlink.exe',
       ],
       mode: ProcessStartMode.detached,
     );

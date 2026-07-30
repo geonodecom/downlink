@@ -67,7 +67,7 @@ class ExplodeYoutubeDownloadEngine implements DownloadEngine {
     String displayName,
   ) async {
     if (!Platform.isAndroid) return null;
-    const channel = MethodChannel('com.geonode.geonode_download_manager/engine');
+    const channel = MethodChannel('com.geonode.downlink/engine');
     try {
       return await channel.invokeMethod<String>('publishFile', {
         'sourcePath': sourcePath,
@@ -412,7 +412,7 @@ class ExplodeYoutubeDownloadEngine implements DownloadEngine {
     required String audioPath,
     required String outputPath,
   }) async {
-    const channel = MethodChannel('com.geonode.geonode_download_manager/engine');
+    const channel = MethodChannel('com.geonode.downlink/engine');
     await channel.invokeMethod<String>('mergeAv', {
       'videoPath': videoPath,
       'audioPath': audioPath,

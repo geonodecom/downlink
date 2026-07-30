@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:geonode_download_manager/src/ytdlp/youtube_format_id.dart';
-import 'package:geonode_download_manager/src/ytdlp/ytdlp_models.dart';
+import 'package:downlink/src/ytdlp/youtube_format_id.dart';
+import 'package:downlink/src/ytdlp/ytdlp_models.dart';
 
 void main() {
   test('parseMergeFormatId accepts video+audio tags', () {

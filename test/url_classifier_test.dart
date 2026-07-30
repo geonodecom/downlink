@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:geonode_download_manager/src/services/url_classifier.dart';
+import 'package:downlink/src/services/url_classifier.dart';
 
 void main() {
   group('UrlClassifier', () {

@@ -1,4 +1,4 @@
-APP_NAME := geonode-download-manager
+APP_NAME := downlink
 BUNDLE_DIR := build/linux/x64/release/bundle
 DEBUG_BUNDLE_DIR := build/linux/x64/debug/bundle
 INSTALL_DIR := $(HOME)/.local/share/$(APP_NAME)
@@ -6,16 +6,16 @@ STATE_DIR := $(or $(XDG_STATE_HOME),$(HOME)/.local/state)/$(APP_NAME)
 RUN_LOG := $(STATE_DIR)/run.log
 BIN_DIR := $(HOME)/.local/bin
 APP_DIR := $(HOME)/.local/share/applications
-DESKTOP_TEMPLATE := packaging/geonode-download-manager.desktop
-DESKTOP_FILE := $(APP_DIR)/geonode-download-manager.desktop
+DESKTOP_TEMPLATE := packaging/downlink.desktop
+DESKTOP_FILE := $(APP_DIR)/downlink.desktop
 HICOLOR_DIR := $(HOME)/.local/share/icons/hicolor
 ICON_DIR := $(HICOLOR_DIR)/256x256/apps
-APP_ICON := $(ICON_DIR)/geonode-download-manager.png
+APP_ICON := $(ICON_DIR)/downlink.png
 USER_SYSTEMD_DIR := $(HOME)/.config/systemd/user
-NATIVE_HOST_NAME := com.geonode.geonode_download_manager
-NATIVE_HOST_BUILD := build/geonode-download-manager-host
-NATIVE_HOST_BUILD_DIR := build/geonode-download-manager-host-cli
-NATIVE_HOST_INSTALLED := $(BIN_DIR)/geonode-download-manager-host
+NATIVE_HOST_NAME := com.geonode.downlink
+NATIVE_HOST_BUILD := build/downlink-host
+NATIVE_HOST_BUILD_DIR := build/downlink-host-cli
+NATIVE_HOST_INSTALLED := $(BIN_DIR)/downlink-host
 NATIVE_HOST_TEMPLATE := packaging/$(NATIVE_HOST_NAME).json
 NATIVE_HOST_DIRS := \
 	$(HOME)/.config/google-chrome/NativeMessagingHosts \
@@ -64,15 +64,15 @@ copy-deps: fetch-deps
 
 check-not-running:
 	@if pgrep -x "$(APP_NAME)" >/dev/null; then \
-		echo "Geonode Download Manager is already running. Quit Geonode Download Manager from the tray before using this target."; \
+		echo "Downlink is already running. Quit Downlink from the tray before using this target."; \
 		echo "Running instances:"; \
 		pgrep -ax "$(APP_NAME)"; \
 		exit 1; \
 	fi
 
 build-host:
-	dart build cli -t bin/geonode_download_manager_host.dart -o "$(NATIVE_HOST_BUILD_DIR)"
-	cp "$(NATIVE_HOST_BUILD_DIR)/bundle/bin/geonode_download_manager_host" "$(NATIVE_HOST_BUILD)"
+	dart build cli -t bin/downlink_host.dart -o "$(NATIVE_HOST_BUILD_DIR)"
+	cp "$(NATIVE_HOST_BUILD_DIR)/bundle/bin/downlink_host" "$(NATIVE_HOST_BUILD)"
 
 build: check-linux-deps codegen build-host
 	flutter build linux --release
@@ -124,7 +124,7 @@ install-desktop:
 install-native-host:
 	@for dir in $(NATIVE_HOST_DIRS); do \
 		mkdir -p "$$dir"; \
-		sed "s|GEONODE_HOST_PATH|$(NATIVE_HOST_INSTALLED)|" "$(NATIVE_HOST_TEMPLATE)" > "$$dir/$(NATIVE_HOST_NAME).json"; \
+		sed "s|DOWNLINK_HOST_PATH|$(NATIVE_HOST_INSTALLED)|" "$(NATIVE_HOST_TEMPLATE)" > "$$dir/$(NATIVE_HOST_NAME).json"; \
 	done
 
 uninstall: remove-legacy-service uninstall-app uninstall-native-host refresh-desktop-cache

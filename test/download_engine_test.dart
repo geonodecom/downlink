@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:geonode_download_manager/src/aria2/aria2_models.dart';
-import 'package:geonode_download_manager/src/engine/download_engine.dart';
+import 'package:downlink/src/aria2/aria2_models.dart';
+import 'package:downlink/src/engine/download_engine.dart';
 
 class FakeDownloadEngine implements DownloadEngine {
   final Map<String, Aria2Status> statuses = {};

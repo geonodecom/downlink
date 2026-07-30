@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:geonode_download_manager/src/native_host/native_host.dart';
+import 'package:downlink/src/native_host/native_host.dart';
 
 Future<void> main(List<String> args) async {
   if (args.isNotEmpty) {
@@ -8,12 +8,12 @@ Future<void> main(List<String> args) async {
       case '--version':
       case '-v':
       case 'version':
-        stderr.writeln('geonode-download-manager-host dev');
+        stderr.writeln('downlink-host dev');
         return;
       case '--help':
       case '-h':
       case 'help':
-        stderr.writeln('geonode-download-manager-host - native messaging bridge for Geonode Download Manager');
+        stderr.writeln('downlink-host - native messaging bridge for Downlink');
         return;
     }
   }

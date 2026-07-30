@@ -1,9 +1,10 @@
-package com.geonode.geonode_download_manager.download
+package com.geonode.downlink.download
 
 import android.os.Handler
 import android.os.Looper
 import org.libtorrent4j.AlertListener
 import org.libtorrent4j.SessionManager
+import org.libtorrent4j.SessionParams
 import org.libtorrent4j.TorrentHandle
 import org.libtorrent4j.TorrentInfo
 import org.libtorrent4j.alerts.AddTorrentAlert
@@ -11,6 +12,7 @@ import org.libtorrent4j.alerts.Alert
 import org.libtorrent4j.alerts.AlertType
 import org.libtorrent4j.alerts.MetadataReceivedAlert
 import org.libtorrent4j.alerts.TorrentFinishedAlert
+import org.libtorrent4j.swig.torrent_flags_t
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 
@@ -49,7 +51,7 @@ class TorrentSession(
             org.libtorrent4j.swig.settings_pack.string_types.peer_fingerprint.swigValue(),
             "-qB4620-",
         )
-        session.start(settings)
+        session.start(SessionParams(settings))
         session.addListener(object : AlertListener {
             override fun types(): IntArray? = null
 
@@ -98,7 +100,7 @@ class TorrentSession(
         tasks[task.gid] = task
         seedGoals[task.gid] = SeedGoal(seedMode, seedRatio, seedTimeMinutes)
         val dir = File(task.directory).apply { mkdirs() }
-        session.download(task.url, dir)
+        session.download(task.url, dir, torrent_flags_t())
         task.status = "active"
         task.updatedAt = System.currentTimeMillis()
         onTaskUpdated(task)
@@ -175,7 +177,7 @@ class TorrentSession(
 
     private fun findGidForHandle(handle: TorrentHandle): String? {
         val name = try {
-            handle.name()
+            handle.getName()
         } catch (_: Exception) {
             null
         }
@@ -234,8 +236,8 @@ class TorrentSession(
             task.connections = status.numPeers()
             task.numPieces = status.numPieces()
             task.pieceLength = 0
-            if (handle.hasMetadata()) {
-                val name = handle.name()
+            if (status.hasMetadata()) {
+                val name = status.name()
                 if (name.isNotBlank()) task.fileName = name
             }
             val goal = seedGoals[gid]

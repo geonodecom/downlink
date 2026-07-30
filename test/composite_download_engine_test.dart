@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:geonode_download_manager/src/engine/composite_download_engine.dart';
-import 'package:geonode_download_manager/src/ytdlp/ytdlp_models.dart';
+import 'package:downlink/src/engine/composite_download_engine.dart';
+import 'package:downlink/src/ytdlp/ytdlp_models.dart';
 
 import 'download_engine_test.dart';
 

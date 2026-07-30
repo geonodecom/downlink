@@ -20,7 +20,7 @@ $AbiToNdkTriple = @{
 }
 
 $TempRoot = [System.IO.Path]::GetTempPath().TrimEnd('\', '/')
-$Temp = Join-Path $TempRoot "geonode-deps-android"
+$Temp = Join-Path $TempRoot "downlink-deps-android"
 if (Test-Path $Temp) { Remove-Item -Recurse -Force $Temp }
 New-Item -ItemType Directory -Force -Path $Temp | Out-Null
 

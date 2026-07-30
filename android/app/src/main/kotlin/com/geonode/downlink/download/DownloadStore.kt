@@ -1,4 +1,4 @@
-package com.geonode.geonode_download_manager.download
+package com.geonode.downlink.download
 
 import android.content.Context
 import org.json.JSONArray
@@ -128,7 +128,7 @@ class DownloadStore(context: Context) {
     }
 
     companion object {
-        private const val PREFS = "geonode_download_engine"
+        private const val PREFS = "downlink_download_engine"
         private const val KEY_TASKS = "tasks"
     }
 }

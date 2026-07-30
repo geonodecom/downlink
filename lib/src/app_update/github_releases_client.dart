@@ -21,7 +21,7 @@ class GitHubReleasesClient {
       uri,
       headers: {
         'Accept': _accept,
-        'User-Agent': 'geonode-download-manager',
+        'User-Agent': 'downlink',
       },
     );
     if (response.statusCode == 404) return null;
@@ -73,11 +73,11 @@ class GitHubReleasesClient {
 
   RegExp _assetNamePattern(String version) {
     if (Platform.isAndroid) {
-      return RegExp('^geonode-download-manager-$version\\.apk\$');
+      return RegExp('^downlink-$version\\.apk\$');
     }
     if (Platform.isWindows) {
       return RegExp(
-        '^geonode-download-manager-$version-windows-x64\\.zip\$',
+        '^downlink-$version-windows-x64\\.zip\$',
       );
     }
     return RegExp(r'^$');
@@ -105,8 +105,8 @@ UpdateOffer? parseLatestReleaseJson(
   if (assets is! List || version.isEmpty) return null;
 
   final pattern = android
-      ? RegExp('^geonode-download-manager-$version\\.apk\$')
-      : RegExp('^geonode-download-manager-$version-windows-x64\\.zip\$');
+      ? RegExp('^downlink-$version\\.apk\$')
+      : RegExp('^downlink-$version-windows-x64\\.zip\$');
 
   Map<String, dynamic>? asset;
   for (final entry in assets) {

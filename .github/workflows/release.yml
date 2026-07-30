@@ -108,13 +108,13 @@ jobs:
           VERSION="${{ needs.meta.outputs.version }}"
           mkdir -p dist
           cp build/app/outputs/flutter-apk/app-release.apk \
-            "dist/geonode-download-manager-${VERSION}.apk"
+            "dist/downlink-${VERSION}.apk"
 
       - name: Upload Android artifact
         uses: actions/upload-artifact@v4
         with:
           name: release-android
-          path: dist/geonode-download-manager-${{ needs.meta.outputs.version }}.apk
+          path: dist/downlink-${{ needs.meta.outputs.version }}.apk
           if-no-files-found: error
 
   windows:
@@ -152,11 +152,11 @@ jobs:
         run: |
           $ErrorActionPreference = "Stop"
           $Version = "${{ needs.meta.outputs.version }}"
-          $StageName = "geonode-download-manager-$Version-windows-x64"
+          $StageName = "downlink-$Version-windows-x64"
           $Stage = Join-Path "dist" $StageName
           $Zip = Join-Path "dist" "$StageName.zip"
           $ReleaseDir = "build\windows\x64\runner\Release"
-          $HostExe = "build\geonode-download-manager-host.exe"
+          $HostExe = "build\downlink-host.exe"
 
           New-Item -ItemType Directory -Force -Path $Stage | Out-Null
           Copy-Item -Path (Join-Path $ReleaseDir "*") -Destination $Stage -Recurse -Force
@@ -180,7 +180,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-windows
-          path: dist/geonode-download-manager-${{ needs.meta.outputs.version }}-windows-x64.zip
+          path: dist/downlink-${{ needs.meta.outputs.version }}-windows-x64.zip
           if-no-files-found: error
 
   publish:
@@ -207,7 +207,7 @@ jobs:
           name: ${{ needs.meta.outputs.tag }}
           generate_release_notes: true
           files: |
-            dist/geonode-download-manager-${{ needs.meta.outputs.version }}.apk
-            dist/geonode-download-manager-${{ needs.meta.outputs.version }}-windows-x64.zip
+            dist/downlink-${{ needs.meta.outputs.version }}.apk
+            dist/downlink-${{ needs.meta.outputs.version }}-windows-x64.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

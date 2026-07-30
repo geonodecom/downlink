@@ -43,7 +43,7 @@ class Aria2ProcessManager {
   }) async {
     if (_endpoint != null && await isHealthy) return _endpoint!;
     if (_endpoint != null) {
-      stderr.writeln('[geonode] aria2 RPC is stale; starting a new process');
+      stderr.writeln('[downlink] aria2 RPC is stale; starting a new process');
       _clearState();
     }
 
@@ -98,7 +98,7 @@ class Aria2ProcessManager {
     ];
 
     stderr.writeln(
-      '[geonode] starting aria2: $executable --rpc-listen-port=$port --dir=$downloadDirectory',
+      '[downlink] starting aria2: $executable --rpc-listen-port=$port --dir=$downloadDirectory',
     );
     _process = await Process.start(executable, args);
     _watchProcess(_process!);
@@ -111,7 +111,7 @@ class Aria2ProcessManager {
       'aria2 RPC listening on ${endpoint.host}:${endpoint.port}',
     );
     stderr.writeln(
-      '[geonode] aria2 RPC ready on ${endpoint.host}:${endpoint.port}',
+      '[downlink] aria2 RPC ready on ${endpoint.host}:${endpoint.port}',
     );
     return endpoint;
   }
@@ -176,7 +176,7 @@ class Aria2ProcessManager {
         } else {
           _diagnostics?.error('aria2 process exited with code $code.');
         }
-        stderr.writeln('[geonode] aria2 exited with code $code');
+        stderr.writeln('[downlink] aria2 exited with code $code');
         if (!identical(_process, process)) return;
         _clearState();
       }),

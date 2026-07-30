@@ -210,7 +210,7 @@ final historyProvider = StreamProvider<List<DownloadEntity>>((ref) {
   return ref.watch(downloadRepositoryProvider).watchHistory();
 });
 
-final settingsProvider = StreamProvider<GeonodeSettings>((ref) {
+final settingsProvider = StreamProvider<DownlinkSettings>((ref) {
   return ref.watch(downloadRepositoryProvider).watchSettings();
 });
 

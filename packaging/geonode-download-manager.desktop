@@ -1,9 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Geonode Download Manager
-Comment=Fast download manager powered by aria2
-Exec=geonode-download-manager
-Icon=geonode-download-manager
-Terminal=false
-Categories=Network;FileTransfer;
-StartupWMClass=com.geonode.geonode_download_manager

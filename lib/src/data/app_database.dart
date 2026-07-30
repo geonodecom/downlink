@@ -83,7 +83,7 @@ class AppDatabase extends _$AppDatabase {
 
   static QueryExecutor _openConnection() {
     return driftDatabase(
-      name: 'geonode_download_manager',
+      name: 'downlink',
       native: const DriftNativeOptions(
         databaseDirectory: getApplicationSupportDirectory,
       ),
@@ -91,8 +91,8 @@ class AppDatabase extends _$AppDatabase {
   }
 }
 
-class GeonodeSettings {
-  const GeonodeSettings({
+class DownlinkSettings {
+  const DownlinkSettings({
     required this.downloadDirectory,
     required this.maxActiveDownloads,
     required this.defaultSplit,
@@ -134,7 +134,7 @@ class GeonodeSettings {
   final double torrentSeedRatio;
   final int torrentSeedTimeMinutes;
 
-  GeonodeSettings copyWith({
+  DownlinkSettings copyWith({
     String? downloadDirectory,
     int? maxActiveDownloads,
     int? defaultSplit,
@@ -155,7 +155,7 @@ class GeonodeSettings {
     double? torrentSeedRatio,
     int? torrentSeedTimeMinutes,
   }) {
-    return GeonodeSettings(
+    return DownlinkSettings(
       downloadDirectory: downloadDirectory ?? this.downloadDirectory,
       maxActiveDownloads: maxActiveDownloads ?? this.maxActiveDownloads,
       defaultSplit: defaultSplit ?? this.defaultSplit,

@@ -364,18 +364,18 @@ class DownloadRepository {
     });
   }
 
-  Stream<GeonodeSettings> watchSettings() async* {
+  Stream<DownlinkSettings> watchSettings() async* {
     await ensureSettings();
     yield* _db.select(_db.appSettings).watch().map(_settingsFromRows);
   }
 
-  Future<GeonodeSettings> getSettings() async {
+  Future<DownlinkSettings> getSettings() async {
     await ensureSettings();
     final rows = await _db.select(_db.appSettings).get();
     return _settingsFromRows(rows);
   }
 
-  Future<void> saveSettings(GeonodeSettings settings) async {
+  Future<void> saveSettings(DownlinkSettings settings) async {
     await _db.batch((batch) {
       batch.insertAllOnConflictUpdate(_db.appSettings, [
         AppSettingsCompanion.insert(
@@ -463,7 +463,7 @@ class DownloadRepository {
     if (count.isNotEmpty) return;
     final downloads = await getDownloadsDirectory();
     await saveSettings(
-      GeonodeSettings(
+      DownlinkSettings(
         downloadDirectory: downloads?.path ?? defaultDownloadsFallback(),
         maxActiveDownloads: 1,
         defaultSplit: 16,
@@ -493,9 +493,9 @@ class DownloadRepository {
         .map((status) => status.name);
   }
 
-  GeonodeSettings _settingsFromRows(List<SettingEntity> rows) {
+  DownlinkSettings _settingsFromRows(List<SettingEntity> rows) {
     final values = {for (final row in rows) row.key: row.value};
-    return GeonodeSettings(
+    return DownlinkSettings(
       downloadDirectory: values['download_directory'] ?? '',
       maxActiveDownloads:
           int.tryParse(values['max_active_downloads'] ?? '') ?? 1,

@@ -1,4 +1,4 @@
-# Apply a GitHub release zip over an existing Geonode Download Manager install and relaunch.
+# Apply a GitHub release zip over an existing Downlink install and relaunch.
 param(
     [Parameter(Mandatory = $true)]
     [string] $InstallDir,
@@ -6,7 +6,7 @@ param(
     [Parameter(Mandatory = $true)]
     [string] $ZipPath,
 
-    [string] $ExeName = "geonode-download-manager.exe"
+    [string] $ExeName = "downlink.exe"
 )
 
 $ErrorActionPreference = "Stop"
@@ -19,7 +19,7 @@ if (-not (Test-Path $ZipPath)) {
     throw "Zip not found: $ZipPath"
 }
 
-$Staging = Join-Path ([System.IO.Path]::GetTempPath()) "geonode-update-$(Get-Random)"
+$Staging = Join-Path ([System.IO.Path]::GetTempPath()) "downlink-update-$(Get-Random)"
 New-Item -ItemType Directory -Path $Staging -Force | Out-Null
 
 try {
@@ -48,9 +48,9 @@ try {
   }
 
   $Root = Resolve-Path (Join-Path $PSScriptRoot "..\..")
-  $ManifestTemplate = Join-Path $Root "packaging\com.geonode.geonode_download_manager.json"
-  $NativeHostName = "com.geonode.geonode_download_manager"
-  $HostPath = Join-Path $InstallDir "geonode-download-manager-host.exe"
+  $ManifestTemplate = Join-Path $Root "packaging\com.geonode.downlink.json"
+  $NativeHostName = "com.geonode.downlink"
+  $HostPath = Join-Path $InstallDir "downlink-host.exe"
 
   if ((Test-Path $ManifestTemplate) -and (Test-Path $HostPath)) {
       $ManifestDir = Join-Path $InstallDir "NativeMessagingHosts"
@@ -58,7 +58,7 @@ try {
       $ManifestPath = Join-Path $ManifestDir "$NativeHostName.json"
       $template = Get-Content -Raw $ManifestTemplate
       $jsonHostPath = $HostPath.Replace('\', '\\')
-      $manifest = $template.Replace('GEONODE_HOST_PATH', $jsonHostPath)
+      $manifest = $template.Replace('DOWNLINK_HOST_PATH', $jsonHostPath)
       Set-Content -Path $ManifestPath -Value $manifest -Encoding UTF8
 
       $RegistryKeys = @(

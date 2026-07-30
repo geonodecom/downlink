@@ -1,4 +1,4 @@
-const HOST_NAME = "com.geonode.geonode_download_manager";
+const HOST_NAME = "com.geonode.downlink";
 
 // --- Connection state ---
 // "host_unavailable" | "app_unavailable" | "ready"
@@ -17,7 +17,7 @@ function generateTraceID() {
 
 function debugLog(...args) {
   if (cachedSettings.debugLogging) {
-    console.log("[geonode]", ...args);
+    console.log("[downlink]", ...args);
   }
 }
 
@@ -168,14 +168,14 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 
   chrome.contextMenus.create({
-    id: "download-with-geonode",
-    title: "Download with Geonode",
+    id: "download-with-downlink",
+    title: "Download with Downlink",
     contexts: ["link"],
   });
 });
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-  if (info.menuItemId !== "download-with-geonode") return;
+  if (info.menuItemId !== "download-with-downlink") return;
 
   const url = info.linkUrl;
   if (!url) return;
@@ -198,14 +198,14 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 
   if (resp && resp.success) {
     debugLog("download handed off successfully", "trace=" + traceID);
-    showNotification("Sent to Geonode", url.split("/").pop() || "Download");
+    showNotification("Sent to Downlink", url.split("/").pop() || "Download");
   } else if (isUnavailable(resp)) {
-    debugLog("geonode unavailable, falling back to browser", url);
+    debugLog("Downlink unavailable, falling back to browser", url);
     reinitiatedUrls.add(url);
     chrome.downloads.download({ url });
-    showNotification("Geonode unavailable", "Downloading normally");
+    showNotification("Downlink unavailable", "Downloading normally");
   } else {
-    debugLog("Geonode rejected", resp.error, url, "trace=" + traceID);
+    debugLog("Downlink rejected", resp.error, url, "trace=" + traceID);
     showNotification("Download rejected", resp.error || "Unknown error");
   }
 });
@@ -279,7 +279,7 @@ chrome.downloads.onCreated.addListener(async (downloadItem) => {
 
   if (resp && resp.success) {
     debugLog("download handed off successfully", "trace=" + traceID);
-    // Geonode accepted — cancel the browser's download to avoid duplicates.
+    // Downlink accepted — cancel the browser's download to avoid duplicates.
     // Best-effort: if cancel fails (already completed, etc.), no harm done.
     try {
       await chrome.downloads.cancel(downloadItem.id);
@@ -289,13 +289,13 @@ chrome.downloads.onCreated.addListener(async (downloadItem) => {
       /* cancel/erase is best-effort */
     }
   } else if (isUnavailable(resp)) {
-    debugLog("geonode unavailable, falling back to browser", url);
+    debugLog("Downlink unavailable, falling back to browser", url);
     if (!failureNotified) {
-      showNotification("Geonode unavailable", "Downloading normally");
+      showNotification("Downlink unavailable", "Downloading normally");
       failureNotified = true;
     }
   } else {
-    debugLog("Geonode rejected", resp.error, url, "trace=" + traceID);
+    debugLog("Downlink rejected", resp.error, url, "trace=" + traceID);
     showNotification("Download rejected", resp.error || "Unknown error");
   }
 });
@@ -303,7 +303,7 @@ chrome.downloads.onCreated.addListener(async (downloadItem) => {
 // --- Content script messages ---
 
 // Shorter timeout for user-initiated actions (link clicks, context menu)
-// so the browser doesn't stall visibly if host or Geonode hangs.
+// so the browser doesn't stall visibly if host or Downlink hangs.
 const USER_ACTION_TIMEOUT_MS = 3000;
 
 function sendCommandWithTimeout(cmd, timeoutMs) {
@@ -371,14 +371,14 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
     if (resp && resp.success) {
       debugLog("download handed off successfully", "trace=" + traceID);
-      showNotification("Sent to Geonode", msg.url.split("/").pop() || "Download");
+      showNotification("Sent to Downlink", msg.url.split("/").pop() || "Download");
     } else if (isUnavailable(resp)) {
-      debugLog("geonode unavailable, falling back to browser", msg.url);
+      debugLog("Downlink unavailable, falling back to browser", msg.url);
       reinitiatedUrls.add(msg.url);
       chrome.downloads.download({ url: msg.url });
-      showNotification("Geonode unavailable", "Downloading normally");
+      showNotification("Downlink unavailable", "Downloading normally");
     } else {
-      debugLog("Geonode rejected", resp.error, msg.url, "trace=" + traceID);
+      debugLog("Downlink rejected", resp.error, msg.url, "trace=" + traceID);
       showNotification("Download rejected", resp.error || "Unknown error");
     }
 

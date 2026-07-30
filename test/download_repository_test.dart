@@ -1,8 +1,8 @@
 import 'dart:convert';
 
-import 'package:geonode_download_manager/src/aria2/aria2_models.dart';
-import 'package:geonode_download_manager/src/data/app_database.dart';
-import 'package:geonode_download_manager/src/data/download_repository.dart';
+import 'package:downlink/src/aria2/aria2_models.dart';
+import 'package:downlink/src/data/app_database.dart';
+import 'package:downlink/src/data/download_repository.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -124,7 +124,7 @@ void main() {
         fileName: 'download.iso',
         split: 16,
         startImmediately: false,
-        headers: {'Referer': 'https://example.com/', 'User-Agent': 'Geonode test'},
+        headers: {'Referer': 'https://example.com/', 'User-Agent': 'Downlink test'},
         source: 'browser_extension',
       ),
     );
@@ -133,7 +133,7 @@ void main() {
     expect(created.source, 'browser_extension');
     expect(options['headers'], {
       'Referer': 'https://example.com/',
-      'User-Agent': 'Geonode test',
+      'User-Agent': 'Downlink test',
     });
   });
 
@@ -254,6 +254,90 @@ void main() {
       expect(updated?.completedLength, 1024);
     },
   );
+
+  test('updateFromAria2 keeps the stored name for temp part paths', () async {
+    final created = await repository.createDownload(
+      const NewDownload(
+        url: 'https://www.facebook.com/reel/934986842964228',
+        directory: '/tmp',
+        fileName: 'facebook_934986842964228.mp4',
+        split: 1,
+        startImmediately: false,
+      ),
+    );
+    await repository.attachGid(created.id, 'fd10c82d65bb49a5');
+
+    await repository.updateFromAria2(
+      const Aria2Status(
+        gid: 'fd10c82d65bb49a5',
+        status: 'active',
+        totalLength: 4096,
+        completedLength: 1024,
+        downloadSpeed: 256,
+        connections: 1,
+        pieceLength: 0,
+        numPieces: 0,
+        bitfield: null,
+        errorCode: null,
+        errorMessage: null,
+        files: [
+          Aria2File(
+            path: '/data/user/0/com.geonode.downlink/cache/parts/fd10c82d65bb49a5.part',
+            length: 4096,
+            completedLength: 1024,
+            uris: ['https://www.facebook.com/reel/934986842964228'],
+          ),
+        ],
+      ),
+    );
+    final updated = await repository.findById(created.id);
+
+    expect(updated?.fileName, 'facebook_934986842964228.mp4');
+  });
+
+  test('updateFromAria2 keeps the stored name for MediaStore URIs', () async {
+    final created = await repository.createDownload(
+      const NewDownload(
+        url: 'https://www.youtube.com/watch?v=abc',
+        directory: '/tmp',
+        fileName: 'Big Buck Bunny.mp4',
+        split: 1,
+        startImmediately: false,
+      ),
+    );
+    await repository.attachGid(created.id, 'gid-1');
+
+    await repository.updateFromAria2(
+      const Aria2Status(
+        gid: 'gid-1',
+        status: 'complete',
+        totalLength: 4096,
+        completedLength: 4096,
+        downloadSpeed: 0,
+        connections: 1,
+        pieceLength: 0,
+        numPieces: 0,
+        bitfield: null,
+        errorCode: null,
+        errorMessage: null,
+        files: [
+          Aria2File(
+            path: 'content://media/external_primary/downloads/54',
+            length: 4096,
+            completedLength: 4096,
+            uris: ['https://www.youtube.com/watch?v=abc'],
+          ),
+        ],
+      ),
+    );
+    final updated = await repository.findById(created.id);
+
+    expect(updated?.fileName, 'Big Buck Bunny.mp4');
+    expect(
+      updated?.contentUri,
+      'content://media/external_primary/downloads/54',
+    );
+  });
 
   test('attachStatusToMatchingDownload repairs restored aria2 gids', () async {
     final created = await repository.createDownload(
