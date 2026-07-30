@@ -59,7 +59,7 @@ Planned work (not shipped):
 - [ ] More video sites (Dailymotion, …)
 - [x] Torrent / magnet support
 - [ ] Signed Play Store releases (production keystore in CI)
-- [x] Automated Windows release zip in CI
+- [x] Automated Windows installer (`Downlink-Setup-*.exe`) and portable zip in CI
 - [ ] Automated Linux release artifacts in CI
 - [ ] Per-file torrent selection
 
@@ -67,7 +67,8 @@ Planned work (not shipped):
 
 ### End users (release installs)
 
-Install **only Downlink**. Official Windows zip releases bundle
+Install **only Downlink**. Official Windows releases
+(`Downlink-Setup-<version>.exe` or the portable zip) bundle
 **aria2**, **yt-dlp**, and **ffmpeg**. Android APKs use a native download service
 for HTTP, a built-in YouTube extractor, and bundled **ffmpeg** (`libffmpeg.so`)
 for high-resolution merges — no separate tool installs required.
@@ -213,13 +214,14 @@ and native host manifests for Google Chrome, Chromium, and Brave.
 
 ### Windows
 
-`tool/windows/install.ps1` installs under `%LOCALAPPDATA%\downlink`, copies
-`downlink-host.exe`, writes the native messaging manifest, and registers HKCU
-keys for Chrome, Chromium, Edge, and Brave.
+The installer and `tool/windows/install.ps1` both install under
+`%LOCALAPPDATA%\downlink`, copy `downlink-host.exe`, write the native messaging
+manifest, and register HKCU keys for Chrome, Chromium, Edge, and Brave.
 
 To use the extension during development:
 
-1. Install Downlink (`make install` on Linux, or `powershell -File tool/windows/install.ps1` on Windows).
+1. Install Downlink (`make install` on Linux, or the Windows installer /
+   `powershell -File tool/windows/install.ps1` on Windows).
 2. Open `chrome://extensions`, `edge://extensions`, or `brave://extensions`.
 3. Enable Developer mode.
 4. Choose **Load unpacked** and select `extensions/chrome`.
@@ -252,6 +254,16 @@ powershell -File tool/windows/build.ps1
 
 The release bundle is written to `build/windows/x64/runner/Release/`.
 `build/downlink-host.exe` is produced for native messaging.
+
+To build the per-user installer (`dist/Downlink-Setup-<version>.exe`), install
+[Inno Setup 6](https://jrsoftware.org/isinfo.php) and run:
+
+```powershell
+powershell -File tool/windows/build_installer.ps1
+```
+
+CI also packages `downlink-<version>-windows-x64-portable.zip` from the same
+bundle for optional portable use and for in-app updates.
 
 ### Android
 
@@ -301,18 +313,33 @@ make uninstall
 
 ### Windows
 
+**Primary:** download `Downlink-Setup-<version>.exe` from GitHub Releases and run
+it. The installer is per-user (no admin prompt), installs to
+`%LOCALAPPDATA%\downlink`, creates a Start Menu shortcut, registers Chromium
+native messaging hosts, and adds an Add/Remove Programs entry.
+
+**Portable (optional):** download `downlink-<version>-windows-x64-portable.zip`,
+extract the whole archive, and run `downlink.exe` from that folder. Do not move
+`downlink.exe` alone — Flutter DLLs, `data/`, and `bin/` must stay beside it.
+In-app updates also use this portable zip layout via `apply_update.ps1`.
+
+**Developer install** (from a local build; no Add/Remove Programs entry):
+
 ```powershell
 powershell -File tool/windows/install.ps1
 ```
 
-This installs to `%LOCALAPPDATA%\downlink`, creates a Start Menu shortcut, and
-registers native messaging hosts for Chrome, Chromium, Edge, and Brave.
+Avoid mixing the developer script with the installer on the same machine — both
+write the same registry keys, but only the installer creates an uninstall entry.
 
-To uninstall:
+To uninstall a developer install:
 
 ```powershell
 powershell -File tool/windows/uninstall.ps1
 ```
+
+Installer-based installs should be removed from Windows Settings → Apps
+(or via the uninstaller created by Setup).
 
 ### Android
 
@@ -332,11 +359,11 @@ the app.
 
 - **Android:** After download, the system APK installer opens. You may need to
   allow installing updates for this app (install unknown apps).
-- **Windows:** In-app updates apply to installs under
-  `%LOCALAPPDATA%\downlink` (see `tool/windows/install.ps1`).
-  The app downloads the release zip, quits, applies files via `apply_update.ps1`,
-  and restarts. Portable or debug builds without that script must update manually
-  from GitHub.
+- **Windows:** In-app updates apply to installs that include `apply_update.ps1`
+  (installer and portable zip). The app downloads
+  `downlink-<version>-windows-x64-portable.zip`, quits, applies files via
+  `apply_update.ps1`, and restarts. Debug builds without that script must update
+  manually from GitHub.
 - **Linux:** No automated update yet; download new builds from GitHub releases.
 
 ## License

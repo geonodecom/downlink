@@ -12,7 +12,7 @@ void main() {
         'size': 12345,
       },
       {
-        'name': 'downlink-0.2.0-windows-x64.zip',
+        'name': 'downlink-0.2.0-windows-x64-portable.zip',
         'browser_download_url': 'https://example.com/app.zip',
         'size': 99999,
       },
@@ -29,10 +29,10 @@ void main() {
     expect(offer.releaseNotes, 'Bug fixes');
   });
 
-  test('parseLatestReleaseJson selects zip on Windows flag', () {
+  test('parseLatestReleaseJson selects portable zip on Windows flag', () {
     final offer = parseLatestReleaseJson(sampleJson, android: false);
     expect(offer, isNotNull);
-    expect(offer!.fileName, 'downlink-0.2.0-windows-x64.zip');
+    expect(offer!.fileName, 'downlink-0.2.0-windows-x64-portable.zip');
     expect(offer.expectedSize, 99999);
   });
 
