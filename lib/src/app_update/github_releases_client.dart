@@ -77,7 +77,7 @@ class GitHubReleasesClient {
     }
     if (Platform.isWindows) {
       return RegExp(
-        '^downlink-$version-windows-x64\\.zip\$',
+        '^downlink-$version-windows-x64-portable\\.zip\$',
       );
     }
     return RegExp(r'^$');
@@ -106,7 +106,7 @@ UpdateOffer? parseLatestReleaseJson(
 
   final pattern = android
       ? RegExp('^downlink-$version\\.apk\$')
-      : RegExp('^downlink-$version-windows-x64\\.zip\$');
+      : RegExp('^downlink-$version-windows-x64-portable\\.zip\$');
 
   Map<String, dynamic>? asset;
   for (final entry in assets) {
