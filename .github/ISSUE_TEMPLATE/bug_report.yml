@@ -1,0 +1,108 @@
+name: Bug report
+description: Report a problem with Downlink
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug.
+
+        **Privacy:** remove cookies, tokens, private download URLs, and personal
+        data from logs and screenshots before submitting.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What went wrong?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps that reliably reproduce the issue.
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Downlink version
+      description: From Settings → About, or the GitHub release tag.
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows
+        - Linux
+        - Android
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: os_version
+    attributes:
+      label: OS version
+      placeholder: "Windows 11 24H2 / Ubuntu 24.04 / Android 15"
+    validations:
+      required: true
+  - type: dropdown
+    id: install_type
+    attributes:
+      label: Install type
+      options:
+        - Windows installer (Downlink-Setup)
+        - Windows portable zip
+        - Windows developer install (install.ps1)
+        - Linux make install
+        - Android APK / flutter install
+        - flutter run (debug)
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: download_type
+    attributes:
+      label: Download type involved
+      options:
+        - Direct HTTP/HTTPS
+        - YouTube
+        - Facebook
+        - Instagram
+        - TikTok
+        - Magnet / torrent
+        - Browser extension handoff
+        - Not download-related
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / diagnostics
+      description: Paste relevant Diagnostics output or error text. Redact secrets.
+  - type: textarea
+    id: extras
+    attributes:
+      label: Additional context
+      description: Screenshots, related issues, or anything else that helps.
