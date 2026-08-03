@@ -106,7 +106,12 @@ class DownloadProbe {
 
   String? _fileNameFromUrl(Uri uri) {
     final basename = p.basename(uri.path);
-    return basename.isEmpty || basename == '.' ? null : basename;
+    if (basename.isEmpty || basename == '.') return null;
+    try {
+      return Uri.decodeComponent(basename);
+    } on ArgumentError {
+      return basename;
+    }
   }
 
   String? _fileNameFromContentDisposition(String? value) {
@@ -137,6 +142,11 @@ class DownloadProbe {
     final trimmed = value?.trim().replaceAll(r'\', '/');
     if (trimmed == null || trimmed.isEmpty) return null;
     final clean = p.basename(trimmed);
-    return clean.isEmpty || clean == '.' ? null : clean;
+    if (clean.isEmpty || clean == '.') return null;
+    try {
+      return Uri.decodeComponent(clean);
+    } on ArgumentError {
+      return clean;
+    }
   }
 }

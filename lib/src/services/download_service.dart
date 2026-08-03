@@ -387,7 +387,12 @@ class DownloadService {
     final uri = Uri.tryParse(url);
     final path = uri?.path ?? url;
     final basename = p.basename(path);
-    return basename.isEmpty ? null : basename;
+    if (basename.isEmpty) return null;
+    try {
+      return Uri.decodeComponent(basename);
+    } on ArgumentError {
+      return basename;
+    }
   }
 
   /// Blocks downloading TikTok/IG/FB/YouTube page URLs as raw HTTP files

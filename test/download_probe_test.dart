@@ -60,6 +60,25 @@ void main() {
     expect(metadata.totalLength, 0);
   });
 
+  test('probe decodes percent-encoded url filenames', () async {
+    server.listen((request) {
+      request.response.close();
+    });
+
+    final metadata = await DownloadProbe().probe(
+      NewDownload(
+        url:
+            'http://${server.address.host}:${server.port}/files/Troy%20(2004)%201080p%20BluRay.mp4',
+        directory: '/tmp',
+        fileName: '',
+        split: 16,
+        startImmediately: false,
+      ),
+    );
+
+    expect(metadata.fileName, 'Troy (2004) 1080p BluRay.mp4');
+  });
+
   test('probe uses range request when head does not include size', () async {
     final methods = <String>[];
     server.listen((request) {
