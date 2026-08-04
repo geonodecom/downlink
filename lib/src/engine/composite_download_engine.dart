@@ -135,28 +135,30 @@ class CompositeDownloadEngine implements DownloadEngine {
     Map<String, Object?>? optionsJson,
   }) async {
     final kind = optionsJson?['kind']?.toString();
-    if (kind == FacebookDownloadOptions.kind && Platform.isAndroid) {
+    if (kind == FacebookDownloadOptions.kind) {
       final directUrl = optionsJson?['directUrl']?.toString() ?? '';
-      if (directUrl.isEmpty) {
+      if (directUrl.isNotEmpty) {
+        final cookie = await _facebookCookieHeader();
+        return _baseEngine.addUri(
+          url: directUrl,
+          directory: directory,
+          split: split,
+          fileName: fileName,
+          headers: {
+            ...headers,
+            'Referer': _facebookReferer,
+            'User-Agent': _facebookUserAgent,
+            if (cookie.isNotEmpty) 'Cookie': cookie,
+          },
+          position: position,
+          optionsJson: optionsJson,
+        );
+      }
+      if (Platform.isAndroid) {
         throw StateError(
           'Facebook download on Android requires a progressive CDN URL.',
         );
       }
-      final cookie = await _facebookCookieHeader();
-      return _baseEngine.addUri(
-        url: directUrl,
-        directory: directory,
-        split: split,
-        fileName: fileName,
-        headers: {
-          ...headers,
-          'Referer': _facebookReferer,
-          'User-Agent': _facebookUserAgent,
-          if (cookie.isNotEmpty) 'Cookie': cookie,
-        },
-        position: position,
-        optionsJson: optionsJson,
-      );
     }
     if (kind == InstagramDownloadOptions.kind && Platform.isAndroid) {
       final directUrl = optionsJson?['directUrl']?.toString() ?? '';

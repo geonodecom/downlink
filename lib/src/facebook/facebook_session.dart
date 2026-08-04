@@ -109,3 +109,27 @@ Future<List<String>> resolveYtdlpFacebookCookieArgs({
   }
   return const [];
 }
+
+/// Cookie header for HTML page scrape (Android WebView session or cookies.txt).
+///
+/// Browser-import settings are yt-dlp-only and cannot be read here — export
+/// cookies.txt when group / private posts need the HTML fallback path.
+Future<String> resolveFacebookCookieHeader({
+  required FacebookCookieArgs settings,
+  FacebookSession? session,
+}) async {
+  final path = settings.cookiesPath.trim();
+  if (path.isNotEmpty) {
+    final file = File(path);
+    if (await file.exists()) {
+      try {
+        final cookies = parseNetscapeCookieFile(await file.readAsString());
+        final header = facebookCookieHeader(cookies);
+        if (header.isNotEmpty) return header;
+      } catch (_) {}
+    }
+  }
+
+  final fbSession = session ?? FacebookSession();
+  return fbSession.cookieHeader();
+}

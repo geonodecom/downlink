@@ -52,6 +52,23 @@ void main() {
       expect(text, contains('TRUE'));
     });
 
+    test('parses netscape cookie file including HttpOnly lines', () {
+      const text = '''
+# Netscape HTTP Cookie File
+.facebook.com	TRUE	/	TRUE	2000000000	c_user	123
+#HttpOnly_.facebook.com	TRUE	/	TRUE	2000000000	xs	secret
+''';
+      final cookies = parseNetscapeCookieFile(text);
+      expect(cookies, hasLength(2));
+      expect(cookies[0].name, 'c_user');
+      expect(cookies[0].value, '123');
+      expect(cookies[1].name, 'xs');
+      expect(cookies[1].value, 'secret');
+      expect(cookies[1].isHttpOnly, isTrue);
+      expect(facebookSessionLooksLoggedIn(cookies), isTrue);
+      expect(facebookCookieHeader(cookies), 'c_user=123; xs=secret');
+    });
+
     test('json round-trip', () {
       const cookies = [
         FacebookCookie(

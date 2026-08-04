@@ -168,5 +168,39 @@ window.__data = {
         contains('https://m.facebook.com/watch/?v=26839013919024659&_rdr'),
       );
     });
+
+    test('pageUrlCandidates expands group permalinks', () {
+      final candidates = FacebookMetadataClient.pageUrlCandidates(
+        'https://www.facebook.com/groups/1055951273631507/permalink/1064647862761848/',
+      );
+      expect(
+        candidates,
+        contains(
+          'https://m.facebook.com/groups/1055951273631507/permalink/1064647862761848/',
+        ),
+      );
+      expect(
+        candidates,
+        contains(
+          'https://m.facebook.com/story.php?story_fbid=1064647862761848&id=1055951273631507',
+        ),
+      );
+      expect(
+        candidates,
+        contains('https://www.facebook.com/watch/?v=1064647862761848'),
+      );
+      expect(
+        FacebookMetadataClient.isGroupPostUrl(
+          'https://www.facebook.com/groups/1/permalink/2/',
+        ),
+        isTrue,
+      );
+      expect(
+        FacebookMetadataClient.isGroupPostUrl(
+          'https://www.facebook.com/watch/?v=1',
+        ),
+        isFalse,
+      );
+    });
   });
 }

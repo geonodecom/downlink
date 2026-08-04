@@ -234,6 +234,7 @@ class FacebookMetadataClient {
   }
 
   /// Reel pages often 400 with browser UAs; prefer watch URLs like yt-dlp.
+  /// Group permalinks need mobile / posts variants for logged-in HTML.
   @visibleForTesting
   static List<String> pageUrlCandidates(String pageUrl) {
     final uri = Uri.tryParse(pageUrl);
@@ -257,11 +258,39 @@ class FacebookMetadataClient {
       ]);
     }
 
+    final groupPermalink = RegExp(
+      r'/groups/(\d+)/permalink/(\d+)',
+      caseSensitive: false,
+    ).firstMatch(uri.path);
+    if (groupPermalink != null) {
+      final groupId = groupPermalink.group(1)!;
+      final postId = groupPermalink.group(2)!;
+      candidates.addAll([
+        'https://www.facebook.com/groups/$groupId/permalink/$postId/',
+        'https://m.facebook.com/groups/$groupId/permalink/$postId/',
+        'https://www.facebook.com/groups/$groupId/posts/$postId/',
+        'https://m.facebook.com/groups/$groupId/posts/$postId/',
+        'https://m.facebook.com/story.php?story_fbid=$postId&id=$groupId',
+        // Some group videos also resolve as watch once the post id is known.
+        'https://www.facebook.com/watch/?v=$postId',
+        'https://m.facebook.com/watch/?v=$postId&_rdr',
+      ]);
+    }
+
     final seen = <String>{};
     return [
       for (final url in candidates)
         if (seen.add(url)) url,
     ];
+  }
+
+  /// True for Facebook group post / permalink URLs (often fail in yt-dlp).
+  static bool isGroupPostUrl(String url) {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return false;
+    final path = uri.path.toLowerCase();
+    return path.contains('/groups/') &&
+        (path.contains('/permalink/') || path.contains('/posts/'));
   }
 
   /// Facebook pages are not always valid UTF-8; never throw on decode.

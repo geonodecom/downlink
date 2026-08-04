@@ -7,6 +7,8 @@ class FakeDownloadEngine implements DownloadEngine {
   var started = false;
   var resetCount = 0;
   Map<String, Object?>? lastOptionsJson;
+  String? lastUrl;
+  Map<String, String> lastHeaders = const {};
 
   @override
   Future<bool> get isHealthy async => started;
@@ -38,6 +40,8 @@ class FakeDownloadEngine implements DownloadEngine {
     int? position,
     Map<String, Object?>? optionsJson,
   }) async {
+    lastUrl = url;
+    lastHeaders = headers;
     lastOptionsJson = optionsJson;
     final gid = optionsJson?['kind'] == 'youtube'
         ? 'ytdlp:fake-${statuses.length + 1}'

@@ -218,10 +218,10 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
                       Text(
                         Platform.isAndroid
                             ? 'Public videos work without login. '
-                                'Private/friends-only need Facebook login in Settings.'
+                                'Private/friends-only/group posts need Facebook login in Settings.'
                             : 'Public videos work without cookies. '
-                                'Private/friends-only need cookies.txt or '
-                                'browser import in Settings → Facebook.',
+                                'Private/friends-only/group posts need cookies.txt '
+                                '(preferred) or browser import in Settings → Facebook.',
                         style: const TextStyle(fontSize: 12),
                       ),
                     ],
@@ -484,7 +484,7 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
     }
     if (_isFacebookFlow) {
       return 'Facebook videos save to Downloads. '
-          'Private/friends-only need Facebook login in Settings.';
+          'Private/friends-only/group posts need Facebook login in Settings.';
     }
     if (_isInstagramFlow) {
       return 'Instagram posts/reels save to Downloads. '
@@ -749,11 +749,21 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
 
     final settings = await ref.read(downloadRepositoryProvider).getSettings();
     late final YtdlpVideoInfo info;
-    late final Map<String, String> progressiveUrls;
+    var progressiveUrls = <String, String>{};
+
+    final facebookCookieArgs = FacebookCookieArgs(
+      cookiesPath: settings.facebookCookiesPath,
+      fromBrowser: settings.facebookCookiesFromBrowser,
+    );
+    final cookieHeader = await resolveFacebookCookieHeader(
+      settings: facebookCookieArgs,
+      session: ref.read(facebookSessionProvider),
+    );
+    final isGroupPost = FacebookMetadataClient.isGroupPostUrl(url);
+    final hasCookieConfig =
+        cookieHeader.isNotEmpty || facebookCookieArgs.hasOverride;
 
     if (Platform.isAndroid) {
-      final cookieHeader =
-          await ref.read(facebookSessionProvider).cookieHeader();
       final client = FacebookMetadataClient(cookieHeader: cookieHeader);
       try {
         final result = await client.fetchInfo(url);
@@ -779,37 +789,62 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
         client.close();
       }
     } else {
-      final client = await _youtubeClient();
-      if (!await _ensureYoutubeTools(client)) return;
-      progressiveUrls = const {};
-      try {
-        info = await client.fetchInfo(url);
-      } on YtdlpException catch (error) {
-        if (mounted) {
-          setState(() {
-            _error = _friendlyFacebookDesktopError(error.message);
-            _submitting = false;
-          });
+      FacebookExtractResult? htmlResult;
+      // Group permalinks often fail in yt-dlp ("No video formats found").
+      if (isGroupPost) {
+        htmlResult = await _tryFacebookHtmlExtract(url, cookieHeader);
+      }
+
+      if (htmlResult == null) {
+        final client = await _youtubeClient();
+        if (!await _ensureYoutubeTools(client)) return;
+        try {
+          info = await client.fetchInfo(url);
+        } on YtdlpException catch (error) {
+          htmlResult ??= await _tryFacebookHtmlExtract(url, cookieHeader);
+          if (htmlResult == null) {
+            if (mounted) {
+              setState(() {
+                _error = _friendlyFacebookDesktopError(
+                  error.message,
+                  hasCookies: hasCookieConfig,
+                  isGroupPost: isGroupPost,
+                );
+                _submitting = false;
+              });
+            }
+            return;
+          }
+        } on FormatException catch (error) {
+          htmlResult ??= await _tryFacebookHtmlExtract(url, cookieHeader);
+          if (htmlResult == null) {
+            if (mounted) {
+              setState(() {
+                _error =
+                    'Could not read yt-dlp output for this Facebook video '
+                    '(encoding error). Try again, or update yt-dlp. ($error)';
+                _submitting = false;
+              });
+            }
+            return;
+          }
+        } catch (error) {
+          htmlResult ??= await _tryFacebookHtmlExtract(url, cookieHeader);
+          if (htmlResult == null) {
+            if (mounted) {
+              setState(() {
+                _error = error.toString();
+                _submitting = false;
+              });
+            }
+            return;
+          }
         }
-        return;
-      } on FormatException catch (error) {
-        if (mounted) {
-          setState(() {
-            _error =
-                'Could not read yt-dlp output for this Facebook video '
-                '(encoding error). Try again, or update yt-dlp. ($error)';
-            _submitting = false;
-          });
-        }
-        return;
-      } catch (error) {
-        if (mounted) {
-          setState(() {
-            _error = error.toString();
-            _submitting = false;
-          });
-        }
-        return;
+      }
+
+      if (htmlResult != null) {
+        info = htmlResult.info;
+        progressiveUrls = Map<String, String>.from(htmlResult.progressiveUrls);
       }
     }
 
@@ -835,7 +870,8 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
         Platform.isAndroid ? 'Downloads' : _directory.text.trim(),
       );
       final directUrl = progressiveUrls[selection.formatId] ?? '';
-      if (Platform.isAndroid && directUrl.isEmpty) {
+      if (directUrl.isEmpty &&
+          (Platform.isAndroid || progressiveUrls.isNotEmpty)) {
         throw StateError('Selected Facebook format has no progressive URL.');
       }
       final options = FacebookDownloadOptions(
@@ -854,7 +890,7 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
               url: url,
               directory: directory,
               fileName: fileName,
-              split: Platform.isAndroid ? _split : 1,
+              split: Platform.isAndroid || directUrl.isNotEmpty ? _split : 1,
               startImmediately: _startImmediately,
               metadata: DownloadMetadata(
                 fileName: fileName,
@@ -873,6 +909,20 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
           _submitting = false;
         });
       }
+    }
+  }
+
+  Future<FacebookExtractResult?> _tryFacebookHtmlExtract(
+    String url,
+    String cookieHeader,
+  ) async {
+    final client = FacebookMetadataClient(cookieHeader: cookieHeader);
+    try {
+      return await client.fetchInfo(url);
+    } catch (_) {
+      return null;
+    } finally {
+      client.close();
     }
   }
 
@@ -896,15 +946,30 @@ class _AddDownloadDialogState extends ConsumerState<AddDownloadDialog> {
     return '$base.$safeExt';
   }
 
-  String _friendlyFacebookDesktopError(String message) {
+  String _friendlyFacebookDesktopError(
+    String message, {
+    bool hasCookies = false,
+    bool isGroupPost = false,
+  }) {
     final lower = message.toLowerCase();
-    if (lower.contains('login') ||
+    final needsAuthHint = lower.contains('login') ||
         lower.contains('cookie') ||
         lower.contains('private') ||
-        lower.contains('unavailable')) {
-      return 'Could not extract this Facebook video. '
-          'For private/friends-only videos, open Settings → Facebook and set '
-          'cookies.txt or import from browser. Details: $message';
+        lower.contains('unavailable') ||
+        lower.contains('no video formats') ||
+        lower.contains('cannot parse');
+    if (needsAuthHint || isGroupPost) {
+      final groupHint = isGroupPost
+          ? 'Group posts need cookies from an account that can see the group. '
+          : '';
+      final cookieHint = hasCookies
+          ? 'Cookies are set, but Facebook did not return playable video URLs '
+              'for this link. Try opening the video, using Copy link on the '
+              'video itself (watch/reel URL), or re-export a fresh cookies.txt.'
+          : 'Open Settings → Facebook and set cookies.txt (preferred for '
+              'groups) or import from browser while logged into Facebook.';
+      return 'Could not extract this Facebook video. $groupHint$cookieHint '
+          'Details: $message';
     }
     return message;
   }

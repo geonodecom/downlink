@@ -141,7 +141,13 @@ final downloadEngineProvider = Provider<DownloadEngine>((ref) {
   return CompositeDownloadEngine(
     baseEngine: base,
     youtubeEngine: youtube,
-    facebookCookieHeader: facebookSession.cookieHeader,
+    facebookCookieHeader: () async {
+      final settings = await facebookCookieArgs();
+      return resolveFacebookCookieHeader(
+        settings: settings,
+        session: facebookSession,
+      );
+    },
     instagramCookieHeader: instagramSession.cookieHeader,
     tiktokCookieHeader: tiktokSession.cookieHeader,
   );
