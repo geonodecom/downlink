@@ -225,13 +225,22 @@ class SegmentedDownloader(
         if (disposition.isNullOrBlank()) return null
         val match = Regex("filename\\*?=(?:UTF-8''|\\\")?([^\";]+)", RegexOption.IGNORE_CASE)
             .find(disposition)
-        return match?.groupValues?.getOrNull(1)?.trim()?.trim('"')
+        val raw = match?.groupValues?.getOrNull(1)?.trim()?.trim('"') ?: return null
+        return try {
+            java.net.URLDecoder.decode(raw, Charsets.UTF_8.name())
+        } catch (_: Exception) {
+            raw
+        }
     }
 
     private fun fileNameFromUrl(url: String): String {
         val path = URL(url).path
         val name = path.substringAfterLast('/').ifBlank { "download.bin" }
-        return name
+        return try {
+            java.net.URLDecoder.decode(name, Charsets.UTF_8.name())
+        } catch (_: Exception) {
+            name
+        }
     }
 
     data class ProbeMeta(

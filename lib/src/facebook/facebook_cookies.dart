@@ -110,3 +110,39 @@ List<FacebookCookie> decodeFacebookCookiesJson(String raw) {
 String encodeFacebookCookiesJson(Iterable<FacebookCookie> cookies) {
   return jsonEncode([for (final c in cookies) c.toJson()]);
 }
+
+/// Parses a Netscape HTTP Cookie File into [FacebookCookie]s.
+///
+/// Lines starting with `#HttpOnly_` are treated as HttpOnly cookies.
+List<FacebookCookie> parseNetscapeCookieFile(String contents) {
+  final cookies = <FacebookCookie>[];
+  for (final rawLine in contents.split(RegExp(r'\r?\n'))) {
+    var line = rawLine.trim();
+    if (line.isEmpty) continue;
+    var isHttpOnly = false;
+    if (line.startsWith('#HttpOnly_')) {
+      isHttpOnly = true;
+      line = line.substring('#HttpOnly_'.length);
+    } else if (line.startsWith('#')) {
+      continue;
+    }
+
+    final parts = line.split('\t');
+    if (parts.length < 7) continue;
+    final name = parts[5].trim();
+    final value = parts[6].trim();
+    if (name.isEmpty) continue;
+    cookies.add(
+      FacebookCookie(
+        name: name,
+        value: value,
+        domain: parts[0].trim().isEmpty ? '.facebook.com' : parts[0].trim(),
+        path: parts[2].trim().isEmpty ? '/' : parts[2].trim(),
+        expiresEpoch: int.tryParse(parts[4].trim()) ?? 0,
+        isSecure: parts[3].trim().toUpperCase() == 'TRUE',
+        isHttpOnly: isHttpOnly,
+      ),
+    );
+  }
+  return cookies;
+}

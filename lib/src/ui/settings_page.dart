@@ -351,8 +351,11 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
           ),
         ] else ...[
           const Text(
-            'Private / friends-only Facebook videos need cookies for yt-dlp. '
-            'Public videos work without cookies. Cookie data stays on this PC.',
+            'Private / friends-only / group videos need cookies for yt-dlp. '
+            'For Facebook groups, export cookies.txt while logged into an '
+            'account that can see the group (browser import alone is often '
+            'not enough). Public videos work without cookies. '
+            'Cookie data stays on this PC.',
             style: TextStyle(fontSize: 12),
           ),
           const SizedBox(height: 16),

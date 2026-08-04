@@ -1,12 +1,58 @@
 <p align="center">
-  <strong>Fast, opinionated download manager for desktop and Android.</strong>
+  <img src="images/appicon.png" alt="Downlink" width="96" />
 </p>
+
+<h1 align="center">Downlink</h1>
+
+<p align="center">
+  <strong>Fast, open source download manager for Windows, Linux &amp; Android.</strong>
+</p>
+
+<p align="center">
+  Pause, resume, and queue downloads with browser handoff, video extraction,
+  and torrent support — built by
+  <a href="https://geonode.com">Geonode Labs</a>.
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg" /></a>
+  <a href="https://github.com/geonodecom/downlink/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/geonodecom/downlink?label=release" /></a>
+  <a href="https://github.com/geonodecom/downlink/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/geonodecom/downlink/total" /></a>
+  <a href="https://github.com/geonodecom/downlink/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/geonodecom/downlink/ci.yml?branch=main&label=CI" /></a>
+  <a href="https://github.com/geonodecom/downlink/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/geonodecom/downlink?style=social" /></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/geonodecom/downlink/releases/latest"><strong>Download for Windows</strong></a>
+  ·
+  <a href="https://github.com/geonodecom/downlink/releases/latest"><strong>Download for Android</strong></a>
+  ·
+  <a href="#linux"><strong>Install on Linux</strong></a>
+</p>
+
+## Features
+
+- Accelerated, resumable HTTP downloads with pause, retry, and reorder
+- Configurable download queue (one-active by default)
+- Chromium extension handoff on desktop; share / open-with on Android
+- YouTube, Facebook, Instagram, and TikTok single-video downloads with format selection
+- Magnet and `.torrent` downloads with seeding controls
+- Android foreground service with progress notifications
+- SQLite-backed history, queue, and settings across platforms
+
+## Screenshots
 
 <p align="center">
   <img
     src="downlink-windows.png"
     alt="Downlink on Windows showing the Downloads screen"
-    width="720"
+    width="480"
+  />
+  &nbsp;
+  <img
+    src="downlink-linux.png"
+    alt="Downlink on Linux showing the Downloads screen"
+    width="480"
   />
 </p>
 
@@ -14,358 +60,65 @@
   <img
     src="downlink-android.png"
     alt="Downlink on Android showing the Downloads screen"
-    width="360"
+    width="280"
   />
 </p>
 
-## Status
-
-Downlink is a Flutter app with **Linux**, **Windows**, and **Android**
-targets. Desktop builds use system `aria2c`. Android uses a native foreground
-service with segmented HTTP Range downloads and publishes completed files to the
-system Downloads collection via MediaStore.
-
-The app focuses on direct HTTP/HTTPS file downloads, YouTube, Facebook, Instagram,
-and TikTok single-video extraction (including private access via session cookies),
-magnet / `.torrent` downloads, queueing, resume, and useful download details.
-
-## Features
-
-- [x] Material 3 UI (desktop navigation rail; phone bottom navigation)
-- [x] Desktop: local aria2 process managed by the app
-- [x] Android: foreground download service with progress notifications
-- [x] One-active-download queue by default (configurable)
-- [x] Pause, resume, retry, remove, and reorder
-- [x] SQLite-backed history, queue, and settings
-- [x] Download details with piece map
-- [x] Desktop system tray integration
-- [x] Chromium extension handoff through a native messaging host (desktop)
-- [x] Android share / open-with intake for direct HTTP(S) URLs and magnet links
-- [x] YouTube video download with format selection (desktop: yt-dlp + ffmpeg; Android: built-in extractor)
-- [x] YouTube playlists (queue each entry) and common URL styles (watch, Shorts, live, embed, music, youtu.be)
-- [x] Facebook / fb.watch video download (desktop: yt-dlp; Android: progressive CDN extraction + HTTP)
-- [x] Private / friends-only Facebook videos via in-app session login (Android WebView) or desktop cookies.txt / browser cookie import
-- [x] Instagram reels / videos download (desktop: yt-dlp; Android: progressive CDN extraction + HTTP) — photo posts and carousels are not supported
-- [x] Private Instagram reels/videos via in-app session login (Android WebView) or desktop cookies.txt / browser cookie import
-- [x] TikTok single-video download (desktop: yt-dlp; Android: progressive CDN extraction + HTTP) — slideshow/photo posts, live, and playlists are not supported
-- [x] Private TikTok videos via in-app session login (Android WebView) or desktop cookies.txt / browser cookie import
-- [x] Magnet and `.torrent` downloads (desktop: aria2 BitTorrent; Android: libtorrent4j) — downloads all files; seeding controlled in Settings
-
-## Roadmap
-
-Planned work (not shipped):
-
-- [ ] YouTube authenticated / private streams and channel pages
-- [ ] More video sites (Dailymotion, …)
-- [x] Torrent / magnet support
-- [ ] Signed Play Store releases (production keystore in CI)
-- [x] Automated Windows installer (`Downlink-Setup-*.exe`) and portable zip in CI
-- [ ] Automated Linux release artifacts in CI
-- [ ] Per-file torrent selection
-
-## Requirements
-
-### End users (release installs)
-
-Install **only Downlink**. Official Windows releases
-(`Downlink-Setup-<version>.exe` or the portable zip) bundle
-**aria2**, **yt-dlp**, and **ffmpeg**. Android APKs use a native download service
-for HTTP, a built-in YouTube extractor, and bundled **ffmpeg** (`libffmpeg.so`)
-for high-resolution merges — no separate tool installs required.
-
-Release packages include [`packaging/THIRD_PARTY_NOTICES.md`](packaging/THIRD_PARTY_NOTICES.md).
-
-### Developers
-
-- Flutter 3.41+
-- Dart 3.11+
-
-Before building a release locally, fetch bundled tools:
-
-```powershell
-# Windows
-powershell -File tool/windows/fetch_deps.ps1
-
-# Linux
-make fetch-deps
-
-# Android
-powershell -File tool/android/fetch_deps.ps1
-```
-
-During development, `flutter run` can still use tools from PATH if bundled
-`bin/` is not present yet.
-
-### Linux build host
-
-- Linux desktop build dependencies for Flutter
-- AppIndicator/Ayatana development headers for tray support
-- `lld-21` or another linker available next to `clang++`
-- `python3` when using the bundled Linux yt-dlp script
-- Bundled tools from `make fetch-deps` **or** system `aria2c`, `yt-dlp`, and `ffmpeg` on PATH
-
-On Debian/Ubuntu-like systems:
-
-```sh
-sudo apt install python3 clang cmake ninja-build pkg-config libgtk-3-dev libstdc++-12-dev libayatana-appindicator3-dev lld-21
-```
-
-### Windows build host
-
-- [Visual Studio](https://visualstudio.microsoft.com/) with the **Desktop development with C++** workload
-- Windows Developer Mode enabled (Flutter plugin symlinks), or equivalent symlink privilege
-
-### Android build host
-
-- Android SDK with cmdline-tools, platform-tools, and a recent platform (API 35+)
-- Accepted Android SDK licenses (`flutter doctor --android-licenses`)
-- Run `tool/android/fetch_deps.ps1` before `flutter build apk` / `appbundle` so
-  `libffmpeg.so` and `libc++_shared.so` are installed under
-  `android/app/src/main/jniLibs/<abi>/` (requires a local Android NDK)
-
-Android direct HTTP downloads run in `DownloadForegroundService`. YouTube on
-Android uses `youtube_explode_dart` for metadata/streams and bundled ffmpeg
-(`libffmpeg.so`) to merge high-resolution video+audio (same style of format
-list as desktop). Public Facebook videos are resolved to progressive CDN MP4
-URLs and downloaded over HTTP (no yt-dlp process). Private Facebook videos use
-an in-app WebView login that stores session cookies on-device (Settings →
-Facebook); those cookies are sent with page and CDN requests. Instagram
-reels and videos follow the same split: desktop uses yt-dlp; Android extracts
-progressive CDN MP4s and downloads over HTTP. Photo posts and image carousels
-are not supported. Private Instagram reels/videos use Settings → Instagram
-(Android WebView login, or desktop cookies.txt / `--cookies-from-browser`).
-TikTok single-video links (`/@user/video/…`, `vm.tiktok.com`, etc.) follow
-the same split: desktop yt-dlp; Android progressive CDN download with Referer
-and session cookies when logged in. Slideshow/photo posts, live streams, and
-playlists are not supported. Private TikTok videos use Settings → TikTok.
-Magnet links and `.torrent` files download all contained files (no per-file
-picker yet). Desktop uses aria2 BitTorrent; Android uses libtorrent4j in the
-foreground service. Seeding (stop / ratio / time) is configured under
-Settings → Torrents.
-On desktop, yt-dlp can also use a Netscape cookies.txt file or
-`--cookies-from-browser` for Facebook, Instagram, and TikTok (separately configured).
-Keep desktop **yt-dlp** on the **nightly** channel for TikTok (`yt-dlp --update-to nightly`,
-or re-run `tool/windows/fetch_deps.ps1` / `make fetch-deps`). TikTok’s JS/WAF
-challenges change often; stable releases lag those fixes. The error
-“Unable to extract universal data for rehydration” almost always means the
-bundled/PATH yt-dlp is too old for current TikTok.
-APK size grows substantially
-because static ffmpeg is packaged per ABI. YouTube downloading may conflict
-with Play Store policy; sideload/dev builds are the safest target for now.
-
-## Development
-
-```sh
-flutter pub get
-dart run build_runner build
-flutter analyze
-flutter test
-```
-
-### Linux
-
-```sh
-make run
-# or
-flutter run -d linux
-```
-
-The Makefile also provides:
-
-```sh
-make run          # debug launch through Flutter
-make run-log      # debug launch and write stdout/stderr to the user state dir
-make run-verbose  # debug launch with verbose Flutter logs
-make build-debug
-make run-debug-bundle
-```
+## Install
 
 ### Windows
 
-```powershell
-powershell -File tool/windows/fetch_deps.ps1
-flutter run -d windows
-# release build (fetch + copy bundled tools automatically):
-powershell -File tool/windows/build.ps1
-```
+1. Open the [latest GitHub Release](https://github.com/geonodecom/downlink/releases/latest).
+2. Download **`Downlink-Setup-<version>.exe`** and run it.
+3. The installer is per-user (no admin prompt), installs to `%LOCALAPPDATA%\downlink`, creates a Start Menu shortcut, and registers browser native messaging.
+
+**Portable option:** download `downlink-<version>-windows-x64-portable.zip`, extract the whole archive, and run `downlink.exe` from that folder. Do not move `downlink.exe` alone — Flutter DLLs, `data/`, and `bin/` must stay beside it.
 
 ### Android
 
-```powershell
-powershell -File tool/android/fetch_deps.ps1
-flutter devices
-flutter run -d <android-device-id>
-```
-
-Optional smoke harness:
-
-```powershell
-flutter test integration_test/android_smoke_test.dart -d <android-device-id>
-```
-
-## Chromium Extension
-
-Desktop only. Android uses share / view intents instead.
+1. Open the [latest GitHub Release](https://github.com/geonodecom/downlink/releases/latest).
+2. Download **`downlink-<version>.apk`** and install it (sideload / allow unknown apps as needed).
+3. Official builds currently use debug signing for local install; Play Store distribution is not the primary path yet.
 
 ### Linux
 
-`make install` installs the Downlink app, the `downlink-host` native messaging bridge,
-and native host manifests for Google Chrome, Chromium, and Brave.
-
-### Windows
-
-The installer and `tool/windows/install.ps1` both install under
-`%LOCALAPPDATA%\downlink`, copy `downlink-host.exe`, write the native messaging
-manifest, and register HKCU keys for Chrome, Chromium, Edge, and Brave.
-
-To use the extension during development:
-
-1. Install Downlink (`make install` on Linux, or the Windows installer /
-   `powershell -File tool/windows/install.ps1` on Windows).
-2. Open `chrome://extensions`, `edge://extensions`, or `brave://extensions`.
-3. Enable Developer mode.
-4. Choose **Load unpacked** and select `extensions/chrome`.
-
-The extension adds a **Download with Downlink** link context-menu item. Automatic
-download capture is off by default and can be enabled from the extension popup.
-Manual captures can launch Downlink when needed. Automatic captures only hand off to
-an already-running Downlink instance; if Downlink is unavailable, the extension falls
-back to the browser download and shows a notification.
-
-On Windows, the running app publishes a loopback TCP endpoint file at
-`%LOCALAPPDATA%\downlink\extension-endpoint.json` for `downlink-host`. Linux continues
-to use a Unix domain socket under `$XDG_RUNTIME_DIR`.
-
-## Build
-
-### Linux
-
-```sh
-make build
-```
-
-The release bundle is written to `build/linux/x64/release/bundle/`.
-
-### Windows
-
-```powershell
-powershell -File tool/windows/build.ps1
-```
-
-The release bundle is written to `build/windows/x64/runner/Release/`.
-`build/downlink-host.exe` is produced for native messaging.
-
-To build the per-user installer (`dist/Downlink-Setup-<version>.exe`), install
-[Inno Setup 6](https://jrsoftware.org/isinfo.php) and run:
-
-```powershell
-powershell -File tool/windows/build_installer.ps1
-```
-
-CI also packages `downlink-<version>-windows-x64-portable.zip` from the same
-bundle for optional portable use and for in-app updates.
-
-### Android
-
-```powershell
-powershell -File tool/android/fetch_deps.ps1
-flutter build apk --release
-flutter build appbundle --release
-```
-
-`fetch_deps.ps1` installs static ffmpeg as
-`android/app/src/main/jniLibs/<abi>/libffmpeg.so` plus matching
-`libc++_shared.so` from the Android NDK (required to run ffmpeg). CI runs the
-same step before packaging.
-
-Outputs:
-
-- APK: `build/app/outputs/flutter-apk/app-release.apk`
-- App Bundle: `build/app/outputs/bundle/release/app-release.aab`
-
-Release builds currently sign with the debug keystore so local install works.
-Replace `signingConfig` in `android/app/build.gradle.kts` with your Play Store
-keystore before publishing.
-
-## Install Locally
-
-### Linux
+Linux release packages are not published yet. Build and install from source:
 
 ```sh
 make install
 ```
 
-This builds and installs the release bundle under `~/.local/share/downlink`, creates
-`~/.local/bin/downlink`, installs the desktop entry and icon, and installs the
-native messaging host.
+This installs under `~/.local/share/downlink`, creates `~/.local/bin/downlink`, and sets up the desktop entry plus native messaging host. See [docs/development.md](docs/development.md) for build-host dependencies.
 
-If you already ran `make build`, install the existing build without rebuilding:
+## Supported downloads
 
-```sh
-make install-built
-```
+| Type | Notes |
+| --- | --- |
+| Direct HTTP / HTTPS | Pause, resume, segmented downloads |
+| YouTube | Watch, Shorts, live, embed, music, playlists |
+| Facebook / Instagram / TikTok | Single videos and reels; private access via session cookies |
+| Magnet / `.torrent` | Downloads all files; seeding controlled in Settings |
 
-To uninstall:
+**Limitations:** Instagram photo posts and carousels, TikTok slideshows/live/playlists, and per-file torrent selection are not supported. Private social videos need cookies (Android in-app login or desktop cookies.txt / browser import). Keep desktop yt-dlp on the nightly channel for reliable TikTok extraction.
 
-```sh
-make uninstall
-```
+## Built by Geonode Labs
 
-### Windows
+Downlink is an open source project from
+[Geonode Labs](https://geonode.com) — the team behind Geonode proxy infrastructure.
 
-**Primary:** download `Downlink-Setup-<version>.exe` from GitHub Releases and run
-it. The installer is per-user (no admin prompt), installs to
-`%LOCALAPPDATA%\downlink`, creates a Start Menu shortcut, registers Chromium
-native messaging hosts, and adds an Add/Remove Programs entry.
+## Contributing
 
-**Portable (optional):** download `downlink-<version>-windows-x64-portable.zip`,
-extract the whole archive, and run `downlink.exe` from that folder. Do not move
-`downlink.exe` alone — Flutter DLLs, `data/`, and `bin/` must stay beside it.
-In-app updates also use this portable zip layout via `apply_update.ps1`.
+Bug reports, feature ideas, and pull requests are welcome. Start with
+[CONTRIBUTING.md](CONTRIBUTING.md), and please follow the
+[Code of Conduct](CODE_OF_CONDUCT.md).
 
-**Developer install** (from a local build; no Add/Remove Programs entry):
-
-```powershell
-powershell -File tool/windows/install.ps1
-```
-
-Avoid mixing the developer script with the installer on the same machine — both
-write the same registry keys, but only the installer creates an uninstall entry.
-
-To uninstall a developer install:
-
-```powershell
-powershell -File tool/windows/uninstall.ps1
-```
-
-Installer-based installs should be removed from Windows Settings → Apps
-(or via the uninstaller created by Setup).
-
-### Android
-
-Install a debug/release APK on a connected device:
-
-```powershell
-flutter install -d <android-device-id>
-# or
-adb install build/app/outputs/flutter-apk/app-release.apk
-```
-
-## Updates
-
-Downlink checks GitHub for new releases on Windows and Android.
-When an update is available, the app can download the official release asset inside
-the app.
-
-- **Android:** After download, the system APK installer opens. You may need to
-  allow installing updates for this app (install unknown apps).
-- **Windows:** In-app updates apply to installs that include `apply_update.ps1`
-  (installer and portable zip). The app downloads
-  `downlink-<version>-windows-x64-portable.zip`, quits, applies files via
-  `apply_update.ps1`, and restarts. Debug builds without that script must update
-  manually from GitHub.
-- **Linux:** No automated update yet; download new builds from GitHub releases.
+Security issues should be reported privately — see [SECURITY.md](SECURITY.md).
 
 ## License
 
 [MIT](LICENSE)
+
+## Development
+
+Build, run, extension setup, platform engines, and release packaging are documented in
+[docs/development.md](docs/development.md).

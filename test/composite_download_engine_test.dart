@@ -54,4 +54,43 @@ void main() {
     );
     expect(youtubeGid.startsWith('ytdlp:'), isTrue);
   });
+
+  test('composite engine routes Facebook directUrl to base engine', () async {
+    final base = FakeDownloadEngine();
+    final youtube = FakeYoutubeEngine();
+    String? seenCookie;
+    final composite = CompositeDownloadEngine(
+      baseEngine: base,
+      youtubeEngine: youtube,
+      facebookCookieHeader: () async {
+        seenCookie = 'c_user=1; xs=2';
+        return seenCookie!;
+      },
+    );
+    await composite.start(
+      downloadDirectory: '/tmp',
+      maxActiveDownloads: 1,
+      defaultSplit: 4,
+    );
+
+    final gid = await composite.addUri(
+      url: 'https://www.facebook.com/groups/1/permalink/2/',
+      directory: '/tmp',
+      split: 4,
+      fileName: 'clip.mp4',
+      optionsJson: const {
+        'kind': 'facebook',
+        'formatId': 'hd',
+        'title': 'Clip',
+        'ext': 'mp4',
+        'directUrl': 'https://video.xx.fbcdn.net/v/t66/hd.mp4',
+      },
+    );
+
+    expect(gid.startsWith('gid-'), isTrue);
+    expect(seenCookie, 'c_user=1; xs=2');
+    expect(base.lastUrl, 'https://video.xx.fbcdn.net/v/t66/hd.mp4');
+    expect(base.lastHeaders['Cookie'], 'c_user=1; xs=2');
+    expect(base.lastHeaders['Referer'], 'https://www.facebook.com/');
+  });
 }
